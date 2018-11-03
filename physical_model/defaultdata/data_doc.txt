@@ -1,0 +1,28 @@
+Incident solar radiation forcing data Qi_input: NARR daily values in 1992 (i.e. downward shortwave radiation fluxes).
+Treated as a climatology as a first step. Can extend the time-series with year-specific conditions later on.   
+Air temperature forcing data airtmp_input: NARR daily values in 1992 (i.e. temperature at 2 m above the ground).
+Treated as a climatology as a first step. Can extend the time-series with year-specific conditions later on. 
+Dew point temperature forcing data dewptT_input: NARR daily values in 1992 (i.e. dewpoint temperature at 2 m above the ground).
+Treated as a climatology as a first step. Can extend the time-series with year-specific conditions later on. 
+E-W wind speed forcing data uWndSpd_input: NARR daily values in 1992 (i.e. uwnd at 10 m above the ground).
+Treated as a climatology as a first step. Can extend the time-series with year-specific conditions later on. 
+N-S wind speed forcing data vWndSpd_input: NARR daily values in 1992 (i.e. vwnd at 10 m above the ground).
+Treated as a climatology as a first step. Can extend the time-series with year-specific conditions later on. 
+Local longshore wind stress data wndl_input: daily values given by Ze. Took the year 1997 from his longest time-series (1995-2002). 
+Possible to calculate a longer forcing time-series with year specific conditions from NARR data (i.e. uwnd and vwnd --> U10. Tau=Cd*rhoair*U10)
+Remote wind forcing data wndr_input given from Ze. Took the year 1997. Longer time-series from 1995-2002. Seems tricky to extend the time-series.
+(i.e. Talk with Debby, some data are missing)
+Mixed layer depth forcing data mld_input: daily values given by Ze. Took year 1997. Time-series available from 1995-2002. Debby and Ze are supposed to give me the code to
+extend the time-series. (based on Ze's talk).
+Entrainment rate data entrnmnt_input: daily values given by Ze. Took year 1997. Time-series available from 1995-2002. Debby and Ze are supposed to give me the code to
+extend the time-series. (based on Ze's talk).
+Initial temperature/salinity profiles for simulation t_input/s_input: World Ocean Atlas (WOA) January averaged decades. shelf=48.625;-125.625 (UL=0-30m;
+LL=30-110m;Dem=110-120m)- Slope=48.625;-126.875 (UL=0-30m;LL=30-390;Dem=390-400). Averaged across depths. 
+Lateral boundary temperatures LBtmp_input: Open ocean upper/lower layers from WOA, all months, decades including 2008, see paper sheet for 
+further information (coordinates, depths, etc..). Interpolation in between 15 of each month. Rain T from air temperature from NARR averaged down to 700hPa (i.e website and see script).
+temperature run-offs from "Stream Temperature Patterns in British Columbia, Canada, based on routine spot measurements".
+Interpolation between 15 of each month. VICC temperatures from NARR surface temperature (see script).
+Lateral boundary salinity LBsal_input: Open ocean upper/lower layers from WOA, all months, decades including 2008, see paper sheet for 
+further information (coordinates, depths, etc..). Interpolation in between 15 of each month. Precipitation salinity=0. Run-off salinity assumed = 0. VICC salinity assumed = 32 (Debby's original
+model)
+
