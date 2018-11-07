@@ -489,19 +489,19 @@ Ht.srf_Tflx = Ht.srfhflx./(TS.Sig(1,:).*Cp.*In.dz(1,:));
 % units
 
   datatoarchive = {...
-        TS.T                        'temp'      'temperature'                               'deg C'
-        TS.S                        'sal'       'salinity'                                  'psu'
-        TS.Sig                      'sig'       'density'                                   'kg m^-3'
-        Ht.qo                       'Qo'        'clear sky irradiance'                      'W m^-2'
-        Ht.meanqi                   'mQi'       'mean observed daily irradiance'            'W m^-2'
-        Ht.qi                       'Qi'        'incident heat flux'                        'W m^-2'
-        Ht.qs                       'Qs'        'sensible heat flux'                        'W m^-2'
-        Ht.ql                       'Ql'        'latent heat flux'                          'W m^-2'
-        Ht.qlw                      'Qlw'       'longwave heat flux'                        'W m^-2'
-        Ht.solhflx                  'Qsol'      'incident heat flux (water column)'         'W m^-2'
-        Ht.srfhflx                  'Qsrf'      'surface heat flux'                         'W m^-2'
-        Wnd.wndspd10                'wndspd10'  'speed velocity 10 m above sea level'       'm d^-1'
-        };       
+       TS.T                        'temp'      'temperature'                               'deg C'
+       TS.S                        'sal'       'salinity'                                  'psu'
+       TS.Sig                      'sig'       'density'                                   'kg m^-3'
+       Ht.qo                       'Qo'        'clear sky irradiance'                      'W m^-2'
+       Ht.meanqi                   'mQi'       'mean observed daily irradiance'            'W m^-2'
+       Ht.qi                       'Qi'        'incident heat flux'                        'W m^-2'
+       Ht.qs                       'Qs'        'sensible heat flux'                        'W m^-2'
+       Ht.ql                       'Ql'        'latent heat flux'                          'W m^-2'
+       Ht.qlw                      'Qlw'       'longwave heat flux'                        'W m^-2'
+       Ht.solhflx                  'Qsol'      'incident heat flux (water column)'         'W m^-2'
+       Ht.srfhflx                  'Qsrf'      'surface heat flux'                         'W m^-2'
+       Wnd.wndspd10                'wndspd10'  'speed velocity 10 m above sea level'       'm d^-1'
+       };     
     
     % If running biology, add state variables and diagnostics to this
     % matrix
@@ -522,7 +522,7 @@ Ht.srf_Tflx = Ht.srfhflx./(TS.Sig(1,:).*Cp.*In.dz(1,:));
      % Archiving
     
     for io = 1:length(Arch)
-        [Arch(io).avg, Arch(io).ncid, Arch(io).vid] = WCVIE2E_archivemldata(Grd, Arch(io), it, datatoarchive, tidx(1));
+        [Arch(io).avg, Arch(io).file, Arch(io).ncid, Arch(io).vid] = WCVIE2E_archivemldata(Grd, Arch(io), it, datatoarchive, tidx(1));
     end
     if it == tidx(1)
         cu = onCleanup(@() closefiles([Arch.ncid]));
