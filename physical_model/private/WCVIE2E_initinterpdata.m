@@ -32,7 +32,7 @@ function A = WCVIE2E_initinterpdata(type, data, Grd)
 %                                        Day. The rest of the columns hold data for each
 %                                        box in the x dimension. Line 1, columns 1-3 are left 
 %                                        blank. Line 1, columns 4-end are reserved for box names 
-%                                        in the x dimension. If the simulation time spans
+%                                        along the x dimension. If the simulation time spans
 %                                        multiple years and the data only spans a single
 %                                        year, the data will be treated as a climatology and
 %                                        repeated for all simulation years.
@@ -115,6 +115,18 @@ switch type
         [A.t,ia]=unique(A.t,'last');
         A.data=A.data(ia,:);
         
+        %add the 29 of february when year is a lap year and when the
+        %original dataset doesn't represent a lap year
+        
+        newt=nan(size(Grd.time));
+        newt(ismember(Grd.time,A.t))=A.t; %add NaN values whenever there's a gap in the date numbers
+        
+        A.t=fillmissing(newt,'linear'); %fill in the missing date numbers
+        
+        newdata=nan(length(Grd.time),size(A.data,2));
+        newdata(~isnan(newt),:)=A.data;  %add NaN values whenever there's a gap in the date numbers
+        
+        A.data=fillmissing(newdata,'linear',1); %interpolate missing values
         
         % Extrapolate to edges of time grid
         
@@ -154,6 +166,19 @@ switch type
         [A.t,ia]=unique(A.t,'last');
         A.data=A.data(ia,:);
         
+        %add the 29 of february when year is a lap year and when the
+        %original dataset doesn't represent a lap year
+        
+        newt=nan(size(Grd.time));
+        newt(ismember(Grd.time,A.t))=A.t; %add NaN values whenever there's a gap in the date numbers
+        
+        A.t=fillmissing(newt,'linear'); %fill in the missing date numbers
+        
+        newdata=nan(length(Grd.time),size(A.data,2));
+        newdata(~isnan(newt),:)=A.data;  %add NaN values whenever there's a gap in the date numbers
+        
+        A.data=fillmissing(newdata,'linear',1); %interpolate missing values
+        
         % Extrapolate to edges of time grid
         
         if A.t(1) > 0
@@ -192,6 +217,18 @@ switch type
         [A.t,ia]=unique(A.t,'last');
         A.data=A.data(ia,:);
         
+        %add the 29 of february when year is a lap year and when the
+        %original dataset doesn't represent a lap year
+        
+        newt=nan(size(Grd.time));
+        newt(ismember(Grd.time,A.t))=A.t; %add NaN values whenever there's a gap in the date numbers
+        
+        A.t=fillmissing(newt,'linear'); %fill in the missing date numbers
+        
+        newdata=nan(length(Grd.time),size(A.data,2));
+        newdata(~isnan(newt),:)=A.data;  %add NaN values whenever there's a gap in the date numbers
+        
+        A.data=fillmissing(newdata,'linear',1); %interpolate missing values
         
         % Extrapolate to edges of time grid
         
@@ -250,6 +287,19 @@ switch type
         %remove the 29 of february when year is not a lap year
         [A.t,ia]=unique(A.t,'last');
         A.data=A.data(:,:,ia);
+        
+        %add the 29 of february when year is a lap year and when the
+        %original dataset doesn't represent a lap year
+        
+        newt=nan(size(Grd.time));
+        newt(ismember(Grd.time,A.t))=A.t; %add NaN values whenever there's a gap in the date numbers
+        
+        A.t=fillmissing(newt,'linear'); %fill in the missing date numbers
+        
+        newdata=nan(length(A.z), length(A.x), length (Grd.time));
+        newdata(:,:,~isnan(newt))=A.data;  %add NaN values whenever there's a gap in the date numbers
+        
+        A.data=fillmissing(newdata,'linear',3); %interpolate missing values along time dim
         
         
         % Extrapolate to edges of time and space grid

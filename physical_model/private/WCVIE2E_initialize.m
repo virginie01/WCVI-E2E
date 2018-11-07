@@ -57,7 +57,7 @@ function [Grd, Ht, Wnd, VMxng, TS, LB, Arch]=WCVIE2E_initialize(In)
 %           Qi:     incident solar radiation from Qi_input
 %           Airtmp: Air temperature from airtmp_input
 %           DewptT: Dew point temperatures from dewptT_input
-%           Qo:     nt x 1 array, Estimate of clear sky irradiance, based on the 
+%           Qo:     Estimate of clear sky irradiance, based on the 
 %                   "Smithsonian Formula" from Seckel and Beaudry, as 
 %                   reported in Reed, 1977, JPO, 7, pp.482-485.  It is good 
 %                   for latitudes between 20S and 60N.
@@ -71,7 +71,7 @@ function [Grd, Ht, Wnd, VMxng, TS, LB, Arch]=WCVIE2E_initialize(In)
 %                           time)
 %                   x:      a 1 x nx array describing the boxes in the x 
 %                           dimension (except for Q0)
-%                   data:   nt x nx array holding the data
+%                   data:   nt x nx or nt x 1 (Qo) array holding the data
 %
 %
 %   Wnd:    A nested structure holding structures related to wind forcing:

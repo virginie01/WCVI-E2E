@@ -1,4 +1,4 @@
-function [ncid, vid] = WCVIE2E_createoutputfiles(folder, z, x, sd, ed, md, vartable, iens)
+function [file, ncid, vid] = WCVIE2E_createoutputfiles(folder, z, x, sd, ed, md, vartable, iens)
 
 % Add dimensions
 nz = size(z,1);

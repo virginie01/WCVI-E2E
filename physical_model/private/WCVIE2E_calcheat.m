@@ -23,7 +23,7 @@ function [Qi, Qs, Ql, Qlw] = WCVIE2E_calcheat(Qi, atmp, dpnt, Tsrf, wspeed10, Qo
 %   alb:        scalar. Albedo, i.e. fraction of incoming radiation
 %               reflected from the sea surface.
 %
-%   nx:         1 x 2 array. Number of horizontal levels. 
+%   nx:         Scalar. Number of horizontal levels. 
 %
 % Output variables:
 %
@@ -102,7 +102,7 @@ wv_srf = 18.*wvp_srf./(R.*wtmpK);      % water vapor, g/m^3
 % vapor density (WQ) using Friehe and Schmitt relationship (p. 808)
 % (m s-1) (g m-3)
 
-WQ = 1.32e-3.*wspeed10.*(wv_srf'-wv_air');
+WQ = 1.32e-3.*wspeed10.*(wv_srf-wv_air);
 
 % Multiply WQ by the latent heat of evaporation (J g-1) to get the latent
 % heat flux (J s-1 m-2 = watts m-2), the negative gets flux from the

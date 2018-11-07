@@ -1,4 +1,4 @@
-function [avg, ncid, vid] = WCVIE2E_archivemldata(Grd, Arch, it, data, it0)
+function [avg, file, ncid, vid] = WCVIE2E_archivemldata(Grd, Arch, it, data, it0)
 %ARCHIVEMLDATA Write mixed_layer results to file
 %
 % New version should be compatible with all versions of Matlab, as long as
@@ -51,7 +51,7 @@ end
 
 if it == it0
     
-        [ncid, vid] = WCVIE2E_createoutputfiles(...
+        [file, ncid, vid] = WCVIE2E_createoutputfiles(...
             Arch.outfile, ...
             Grd.z, ...
             Grd.x, ...
@@ -63,6 +63,7 @@ if it == it0
 else
     ncid = Arch.ncid;
     vid = Arch.vid;
+    file = Arch.file;
 end
 
 % Write data to files
@@ -74,17 +75,12 @@ if Arch.islast(it)
     iss = cellfun(@(x) isscalar(x), avg);
     
     start = cell(size(avg));
-    [start{isd}] = deal([0 0 Arch.bin(it)-1]);
-    [start{isde}] = deal([Arch.bin(it)-1 0]);
-    [start{iss}] = deal([Arch.bin(it)-1]);
-    
-    count = cell(size(avg));
-    [count{isd}] = deal([Grd.nz Grd.nx 1]);
-    [count{isde}] = deal([1 Grd.nx]);
-    [count{iss}] = deal([1]);
+    [start{isd}] = deal([1 1 Arch.bin(it)]);
+    [start{isde}] = deal([Arch.bin(it) 1]);
+    [start{iss}] = deal(Arch.bin(it));
     
     for iv = 1:length(avg)
-        netcdf.putVar(ncid, vid(iv), start{iv}, count{iv}, avg{iv});
+        ncwrite(file, data{iv,2}, avg{iv}, start{iv});
     end
     
     % Zero out avg arrays
