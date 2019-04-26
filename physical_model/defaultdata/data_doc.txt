@@ -1,0 +1,66 @@
+
+Forcing datasets from NARR: https://www.esrl.noaa.gov/psd/data/gridded/data.narr.html
+Forcing datasets from SODA: https://www.atmos.umd.edu/~ocean/
+
+1) Incident solar radiation forcing data Qi_input: NARR 3-hourly values in 1992 (i.e. downward shortwave radiation fluxes).
+Treated as a climatology as a first step. Can extend the time-series with year-specific conditions later on.  
+
+[Net longwave radiation fluxes (downward - upward) Qlw_input: NARR 3-hourly values in 1992
+Treated as a climatology as a first step. Can extend the time-series with year-specific conditions later on.]
+
+[Upward latent heat flux data Ql_input: NARR 3-hourly values in 1992
+Treated as a climatology as a first step. Can extend the time-series with year-specific conditions later on.]
+
+[Upward sensible heat flux data Qs_input: NARR 3-hourly values in 1992
+Treated as a climatology as a first step. Can extend the time-series with year-specific conditions later on.]  
+ 
+2) Air temperature forcing data airtmp_input: NARR 3-hourly values in 1992 (i.e. temperature at 2 m above the ground).
+Treated as a climatology as a first step. Can extend the time-series with year-specific conditions later on
+
+3) Dew point temperature forcing data dewptT_input: NARR 3-hourly values in 1992 (i.e. dewpoint temperature at 2 m above the ground).
+Treated as a climatology as a first step. Can extend the time-series with year-specific conditions later on
+
+4) E-W wind speed forcing data uWndSpd_input: NARR 3-hourly values in 1992 (i.e. uwnd at 10 m above the ground).
+Treated as a climatology as a first step. Can extend the time-series with year-specific conditions later on. 
+
+5) N-S wind speed forcing data vWndSpd_input: NARR 3-hourly values in 1992 (i.e. vwnd at 10 m above the ground).
+Treated as a climatology as a first step. Can extend the time-series with year-specific conditions later on. 
+
+6) N-S alongshore wind stress (N.m-2) tauy2_input directly from Ze. Ze gave me daily values. Took year 1997.
+Time-series available from 1995-2002. Consider them at midnight of each day and interpolate in between. 3 hourly dataset.
+
+7) Mixed layer depth (m) forcing data mld_input: daily values given by Ze.  Took year 1997. Time-series available from 1995-2002. 
+Debby and Ze are supposed to give me the code to extend the time-series. (based on Ze's talk). As for now, Interpolated values between midnight of each day. 3-hourly datset.
+
+8) Entrainment rate data (s.^-1) entrnmnt_input: daily values given by Ze. Took year 1997. Time-series available from 1995-2002. Debby and Ze are supposed to give me the code to
+extend the time-series. (based on Ze's talk). As for now, Interpolated values between midnight of each day. 3-hourly dataset. divided initial values by 86400 to convert into s-1.
+
+9) Precipitation rate data (m.s^-1) p_input: NARR 3-hourly values in 1992. Transformation from intital units to m.s^-1 thanks to water density. Negative values sometimes. Don't know why.
+Treated as a climatology as a first step. Can extend the time-series with year-specific conditions later on. Compare well with initial cycle (Debby's paper)
+ 
+10) Flux of terrigenous run-offs (m.s^-1) from WCVI r_input: Morrison et al., 2011. A method for estimating monthly freshwater discharge affecting british columbia coastal waters.
+Take results from WCVI. Results in km3/month. Use average depth along the shore = 20m (suppose that measurement realized there) and coastline length =365km.
+to calculate a flux in m.s^-1. Data for each month, assume they are representative of the 15th of each month. Linearly extrapolate between the 15th of each month. Pick a year randomly=1997
+--> FINALLY KEPT THE ORIGINAL CYCLE FROM DEBBY'S MODEL BECAUSE 2 TIME SERIES DON"T COMPARE WELL IN TERMS OF ORDER OF MAGNITUDE. No forcing data.
+
+11) Flux from the Vancouver Island Coastal Current (VICC) (m.s^-1) c_input: Morrison et al., 2011. A method for estimating monthly freshwater discharge affecting british columbia coastal waters.
+Take results from Juan de Fuca, Skagit, and Fraser. Results in km3/month. Use average depth at the end of the Juan de Fuca Straight = 550m (suppose that measurement realized there)
+and width of the Juan de Fuca at its end (20km) to calculate a flux in m.s^-1. Data for each month, assume they are representative of the 15th of each month. 
+Linearly extrapolate between the 15th of each month. Pick a year randomly=1997.
+--> FINALLY KEPT THE ORIGINAL CYCLE FROM DEBBY'S MODEL BECAUSE 2 TIME SERIES DON"T COMPARE WELL IN TERMS OF ORDER OF MAGNITUDE. No forcing data.
+
+12) Initial temperature/salinity profiles for simulation t_input/s_input: SODA. shelf=48.75;234.25 E (UL=0-25m;
+LL=35-87m;Dem=98-110m)- Slope=48.25;233.75E (UL=0-25m;LL=35-382;Dem=382m). Averaged across depths. January.
+
+13) Lateral boundary temperatures LBtmp_input: 
+Open ocean upper/lower layers from SODA, All months, Long=232.75E, Lat=47.75. Averages across depths (UL=0-25m;LL=35-728m). Interpolation in between 15 of each month.
+Suppose that Rain T is ~ air temperature at 2m. 3-hourly data taken from NARR.
+temperature run-offs from "Stream Temperature Patterns in British Columbia, Canada, based on routine spot measurements".Interpolation between 15 of each month. 
+VICC temperatures from NARR surface temperature 3-hourly data (see script).
+
+14) Lateral boundary salinity LBsal_input: 
+Open ocean upper/lower layers from SODA, All months, Long=232.75E, Lat=47.75. Averages across depths (UL=0-25m;LL=35-728m). Interpolation in between 15 of each month. 
+Precipitation salinity=0. 
+Run-off salinity assumed = 0. 
+VICC salinity assumed = 32 (Debby's original model). Might be improved. WOA? Cruise data?
+
