@@ -88,17 +88,17 @@ The full package requires additional Mathworks toolboxes:
 
 There are two ways to obtain a local copy of this repository:
 
-**Option 1: Using Git (recommended)**
+**Option 1: Using Git (recommended)**  
 git clone https://github.com/virginie01/WCVI-E2E.git
 
-**Option 2: Download as ZIP**
+**Option 2: Download as ZIP**  
 - Click the green **Code** button at the top of the repository page on GitHub
 - Select **Download ZIP**
 - Extract the downloaded file to your desired location 
 
 ### Running the Model
 
-After downloading the repository:
+After downloading the repository:  
 1. Open MATLAB
 2. Navigate to the project folder
 3. Open `scripts/WCVI-E2E_run.m`
@@ -107,10 +107,10 @@ After downloading the repository:
 
 ### Syntax
 
-- To run the physics-only version:
+- To run the physics-only version:  
 `physicalmodel('outputs_physics');`
 
-- To run the full E2E version:
+- To run the full E2E version:  
 `physicalmodel('outputs_e2e','biofun',@biomodel);`
 
 ---
@@ -133,11 +133,11 @@ The `/results/` folder contains long-term simulations used in PhD analyses along
 
 ## Related Work
 
-**PhD thesis**
+**PhD thesis**  
 A full description of the model and its development is available in:
 - `/docs/thesis.pdf`
 
-**Manuscript**
+**Manuscript**  
 A condensed version focusing on coupling strategies and ecosystem dynamics:
 `/docs/paper_submitted.docx`
 
@@ -145,22 +145,22 @@ A condensed version focusing on coupling strategies and ecosystem dynamics:
 
 ## Pre-existing Work and References
 
-1. The 2D physical box model builds upon and extends the following framework:
--Ianson D, Allen SE. A two‐dimensional nitrogen and carbon flux model in a coastal upwelling region. Global Biogeochemical Cycles 2002;16. https://doi.org/10.1029/2001GB001451.
+1. The 2D physical box model builds upon and extends the following framework:  
+- Ianson D, Allen SE. A two‐dimensional nitrogen and carbon flux model in a coastal upwelling region. Global Biogeochemical Cycles 2002;16. https://doi.org/10.1029/2001GB001451.
 
 Key extensions include:
 - Reprogrammed in MATLAB (initially coded in FORTRAN)
 - Addtitional alongshore currents
 - Temperature coded as a prognostic variable
 
-2. The biogechemical model builds upon and extends the NEMURO framework:
--Kishi MJ, Kashiwai M, Ware DM, Megrey BA, Eslinger DL, Werner FE, et al. NEMURO—a lower trophic level model for the North Pacific marine ecosystem. Ecological Modelling 2007;202:12–25. https://doi.org/10.1016/j.ecolmodel.2006.08.021.
+2. The biogechemical model builds upon and extends the NEMURO framework:  
+- Kishi MJ, Kashiwai M, Ware DM, Megrey BA, Eslinger DL, Werner FE, et al. NEMURO—a lower trophic level model for the North Pacific marine ecosystem. Ecological Modelling 2007;202:12–25. https://doi.org/10.1016/j.ecolmodel.2006.08.021.
 
 Key modifications of the NEMURO model include:
-- modifications of the nitrification and decomposition formulations (see `/docs/paper_submitted.docx`)
+- Modifications of the nitrification and decomposition formulations (see `/docs/paper_submitted.docx`)
 
-3. The E2E framework and coupling strategies draw from the WCE model:
-Kearney KA, Stock C, Aydin K, Sarmiento JL. Coupling planktonic ecosystem and fisheries food web models for a pelagic ecosystem: Description and validation for the subarctic Pacific. Ecological Modelling 2012;237–238:43–62. https://doi.org/10.1016/j.ecolmodel.2012.04.006.
+3. The E2E framework and coupling strategies draw from the WCE model:  
+- Kearney KA, Stock C, Aydin K, Sarmiento JL. Coupling planktonic ecosystem and fisheries food web models for a pelagic ecosystem: Description and validation for the subarctic Pacific. Ecological Modelling 2012;237–238:43–62. https://doi.org/10.1016/j.ecolmodel.2012.04.006.
 
 Key adaptations include:
 - Model refactoring for coastal upwelling systems
