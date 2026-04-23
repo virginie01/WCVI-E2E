@@ -87,9 +87,9 @@ The full package requires additional Mathworks toolboxes:
 ### Downloading the Repository
 
 There are two ways to obtain a local copy of this repository:
+
 **Option 1: Using Git (recommended)**
-```bash
-git clone https://github.com/virginie01/WCVI-E2E.git ```
+git clone https://github.com/virginie01/WCVI-E2E.git
 
 **Option 2: Download as ZIP**
 - Click the green **Code** button at the top of the repository page on GitHub
@@ -121,7 +121,7 @@ Simulation outputs are saved in the `/results/` directory and the appropriate su
 - Monthly time series of ecosystem state variables
 - Monthly time-series of diagnostic variables (derivatives, intermediate fluxes, additional diagnostic variables)
 
-Refer to `scripts/WCVI-E2E_run.m` and `scripts/WCVIE2E_variables.docx for plotting simulation outputs
+Refer to `scripts/WCVI-E2E_run.m` and `scripts/WCVIE2E_variables.docx` for plotting simulation outputs
 
 ---
 
