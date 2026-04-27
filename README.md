@@ -205,6 +205,7 @@ The author gratefully acknowledges:
 - Sarah Z. Rosengard (University of British Columbia) for satellite-based phytoplankton composition data  
 
 These contributions were essential for model development, calibration, and validation.
+
 ---
 
 ## Citation
