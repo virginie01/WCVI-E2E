@@ -39,6 +39,7 @@ The WCVI-E2E model was developed through a multi-stage process, combining indepe
    - The calibrated model reproduces seasonal and spatial dynamics of nutrients and plankton 
 
 **Notes**
+
 See Section 2. and specifically section 2.2.3. in  `/docs/thesis.pdf` for a description of the calibration/optimization process  
 
 2. **Ecopath-based Food-Web Model**  
@@ -48,6 +49,7 @@ See Section 2. and specifically section 2.2.3. in  `/docs/thesis.pdf` for a desc
    - The model provides a static, mass-balanced representation of ecosystem structure
 
 **Notes**
+
 For a complete description of the WCVI Ecopath model, refer to section 3. in `/docs/thesis.pdf`  
 
 3. **Coupled End-to-End Model (WCVI-E2E)**  
@@ -58,6 +60,7 @@ For a complete description of the WCVI Ecopath model, refer to section 3. in `/d
    - Heuristic parameter tuning due to model complexity 
 
 **Notes**
+
 Refer to Section 4. of `/docs/thesis.pdf` and `/docs/paper_submitted.docx`.    
 
 ---
@@ -184,7 +187,7 @@ A condensed version focusing on coupling strategies and ecosystem dynamics:
 
 - This codebase is research-oriented and not optimized for general-purpose use
 - The model is tailored to the WCVI ecosystem
-- Large simulations (e.g., 100-year runs) with a monthly archiving time step currently require ~ 48 hours on a local machine, thanks to balancing model granularity with computational constraints
+- Large simulations (e.g., 100-year runs with monthly output) require ~48 hours on a standard local machine, reflecting a balanced trade-off between model granularity and computational efficiency
 
 ---
 
