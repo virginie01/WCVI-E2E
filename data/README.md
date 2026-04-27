@@ -33,17 +33,21 @@ https://www.esrl.noaa.gov/psd/data/gridded/data.narr.html
 - **Model usage**
 
 Averaged spatially over latitude/longitude falling within WCVI shelf and slope boxes
+
 Averaged temporally over 1992–2017 to construct annual climatologies with a 3 hour time step
 
 - **Transition from _input.m to final input datasets used in model simulations**
 
 See utility functions in folder /functions
-Interpolated to ODE timestep (typically 30 minutes)
-smooth using a 24-hour moving average (remove daily fluctuations) 
 
-**Notes**
+Interpolated to ODE timestep (typically 30 minutes)
+
+Smooth using a 24-hour moving average (remove daily fluctuations) 
+
+- **Notes**
 
 QO: clear sky irradiance calculated in processPhysicalForcing.m (Folder /functions)
+
 WSPD10: wind velocity at 10 m above surface calculated in processPhysicalForcing.m (Folder /functions)
 
 ---
@@ -63,13 +67,16 @@ Provided by collaborator Zelalem Engida (local daily values, 1995–2002)
 - **Model usage**
 
 Year 1997 selected for its representativeness
+
 Values assumed at midnight and interpolated to 3-hourly resolution
+
 Used primarily for comparison and validation
 
 
 - **Transition from _input.m to final input datasets used in model simulations**
 
 See utility functions in folder /functions
+
 Interpolated to ODE timestep (typically 30 minutes)
 
 ---
@@ -94,6 +101,7 @@ xfilphy\_input modified to impose plateaus during upwelling/downwelling seasons 
 - **Transition from _input.m to final input datasets used in model simulations**
 
 See utility functions in folder /functions
+
 Interpolated to ODE timestep (typically 30 minutes)
 
 ---
@@ -110,18 +118,23 @@ Interpolated to ODE timestep (typically 30 minutes)
 - **Source**
 
 Provided by collaborator Zelalem Engida
+
 Local values for the WCVI shelf and slope
+
 Daily values, 1995-2002
 
 - **Model usage**
 
 Climatological averaging across available years
+
 Interpolated between daily midnight values to a 3-hour resolution
+
 Entrainment recalculated from MLD to ensure physical consistency: ent(t)= (MLD(t+1)−MLD(t−1))/2Δt
 
 - **Transition from _input.m to final input datasets used in model simulations**
 
 See utility functions in folder /functions
+
 Interpolated to ODE timestep (typically 30 minutes)
 
 ---
@@ -139,16 +152,19 @@ Interpolated to ODE timestep (typically 30 minutes)
 - **Sources**
 
 "Currents along the pacific Coast of Canada"
+
 "Poleward reach of the California Undercurrent extension"
 
 - **Assumptions**
 
 Currents distributed over fixed widths and depths
+
 Fluxes converted to equivalent volumetric exchange rates (s⁻¹)
 
 - **Transition from _input.m to final input datasets used in model simulations**
 
 See utility functions in folder /functions
+
 Interpolated to ODE timestep (typically 30 minutes)
 
 ---
@@ -169,7 +185,9 @@ World Ocean Atlas (WOA)
 - **Model usage**
 
 January climatology
+
 Vertical averaging mapped onto WCVI box structure
+
 Shelf and slope treated separately according to model geometry
 
 ---
@@ -186,17 +204,21 @@ Shelf and slope treated separately according to model geometry
 - **Sources**
 
 WOA climatologies
+
 NARR (rain temperature)
+
 BC stream temperature datasets --> "Stream Temperature Patterns in British Columbia, Canada, based on routine spot measurements"
 
 - **Temporal resolution**
 
 Monthly climatologies interpolated between mid-month values
+
 Converted to sub-daily resolution for model integration
 
 - **Transition from _input.m to final input datasets used in model simulations**
 
 See utility functions in folder /functions
+
 Interpolated to ODE timestep (typically 30 minutes)
 
 ---
@@ -218,7 +240,9 @@ World Ocean Atlas (WOA)
 - **Model usage**
 
 Converted from µmol kg⁻¹ to mol m⁻³ using seawater density (1026 kg m⁻³)
+
 Shelf and slope treated separately
+
 Annual climatology
 
 O2 is o2\_input formatted as a structure and serves as the data input for model simulations
@@ -236,10 +260,13 @@ O2 is o2\_input formatted as a structure and serves as the data input for model 
 - **Source**
 
 Ecopath outputs
+
 DFO literature
+
 Survey data and CPUE-based extrapolations
 
 - **Notes**
+
 BIOTS is fisheriesTS\_input formatted as a structure and serves as the data input for model simulations.
 
 ---
@@ -256,7 +283,9 @@ BIOTS is fisheriesTS\_input formatted as a structure and serves as the data inpu
 - **Source**
 
 NemParam: Calibrated standalone NEMURO model (Chapter 2, PhD thesis)
+
 Use nemuroParamSets.m to generate structure NemParam: NemParam = nemuroParamSets('Kishi et al.A7')
+
 bnem0: see sections 3.4 and 3.5
 
 ---
@@ -289,9 +318,12 @@ see sections 3.4 and 3.5
 - **Sources**
 
 Foraging arena parameters used for trophic links involving nektonic groups, default values and can be calibrated or adjusted during end-to-end model calibration
-grmax: calibrated standalone NEMURO model (Chapter 2, PhD thesis) for NEMURO groups; calibrated for extrazooplankton groups during end-to-end model calibration
-thresh: calibrated standalone NEMURO model (Chapter 2, PhD thesis) for NEMURO groups; calibrated for extrazooplankton groups during end-to-end model calibration
-m0exp: linear or quadratic mortality - tested during end-to-end model calibration
+
+*grmax*: calibrated standalone NEMURO model (Chapter 2, PhD thesis) for NEMURO groups; calibrated for extrazooplankton groups during end-to-end model calibration
+
+*thresh*: calibrated standalone NEMURO model (Chapter 2, PhD thesis) for NEMURO groups; calibrated for extrazooplankton groups during end-to-end model calibration
+
+*m0exp*: linear or quadratic mortality - tested during end-to-end model calibration
 
 ---
 
@@ -307,24 +339,33 @@ m0exp: linear or quadratic mortality - tested during end-to-end model calibratio
 
 It defines:
 
-- living and non-living groups,
-- biomasses,
-- production and consumption rates,
-- diet composition,
-- import/export terms,
-- trophic linkages
+Living and non-living groups,
+
+Biomasses,
+
+Production and consumption rates,
+
+Diet composition,
+
+Import/export terms,
+
+Trophic linkages
 
 - **Role in the WCVI-E2E model**
 
-- Provides the trophic backbone for nekton and extra zooplankton groups
-- Supplies parameters used to compute feeding, mortality, and initial biomass terms
-- Ensures consistency with a mass-balanced food-web representation
+Provides the trophic backbone for nekton and extra zooplankton groups
+
+Supplies parameters used to compute feeding, mortality, and initial biomass terms
+
+Ensures consistency with a mass-balanced food-web representation
 
 - **Source**
 
-- Ecopath model developed for the WCVI ecosystem
-- Described in Chapter 3 of the PhD thesis
-- Generated using the ecopath\_matlab package https://github.com/kakearney/ecopath\_matlab-pkg
+Ecopath model developed for the WCVI ecosystem
+
+Described in Chapter 3 of the PhD thesis
+
+Generated using the ecopath\_matlab package https://github.com/kakearney/ecopath\_matlab-pkg
 
 - **Temporal resolution**
 
@@ -337,7 +378,8 @@ Implicit (applied uniformly within WCVI model boxes)
 - **Notes**
 
 The Ecopath model is used only when isnem = false
-When running NEMURO-only configurations, EM is not required
+
+When running NEMURO-only configurations, *EM* is not required
 
 ---
 
@@ -353,19 +395,23 @@ When running NEMURO-only configurations, EM is not required
 
 Each entry specifies whether a group is:
 
-- a NEMURO planktonic variable,
-- an extra zooplankton group,
-- or a nekton group.
+A NEMURO planktonic variable,
+
+An extra zooplankton group,
+
+Or a nekton group.
 
 - **Allowed values**
 
-- NEMURO variable name (e.g. 'ps', 'pl', 'zs', 'zl', 'zp', 'pon')
-- 'z' : extra zooplankton group (Ecopath-based, planktonic)
-- 'n' : nekton group (Ecopath-based, not physically mixed)
+NEMURO variable name (e.g. 'ps', 'pl', 'zs', 'zl', 'zp', 'pon')
+
+'z' : extra zooplankton group (Ecopath-based, planktonic)
+
+'n' : nekton group (Ecopath-based, not physically mixed)
 
 - **Notes**
 
-types must be consistent with the ordering of state variables in the Ecopath model
+*types* must be consistent with the ordering of state variables in the Ecopath model
 
 ---
 
