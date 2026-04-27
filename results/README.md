@@ -39,13 +39,15 @@ To generate new simulations:
 
 1. physics-only version
 
-```bash
+```
 physicalmodel('outputs_physics');
+```
 
 2. Full E2E version
 
-```bash
+```
 physicalmodel('outputs_e2e','biofun',@biomodel);
+```
 
 3. Outputs will be saved to `outputs_physics/` or `outputs_e2e/`
 
