@@ -189,6 +189,22 @@ University of British COlumbia
 ## Acknowledgements
 This model builds on prior work and code contributions from collaborators and previous studies in physical, biogeochemical, and ecosystem modeling.
 
+This work also builds on contributions from multiple collaborators and data providers.
+
+The author gratefully acknowledges:
+
+- Debby Ianson (Fisheries and Oceans Canada, Institute of Ocean Sciences) for her support and guidance in developing the physical–biogeochemical component of the model  
+- Fisheries and Oceans Canada (DFO) staff for providing key datasets used in model development, including zooplankton, groundfish, sardine, herring, and salmon data  
+- Specific contributions from:
+  - Moira Galbraith (zooplankton data, LaPerouse Zooplankton Monitoring Program)  
+  - Maria Surry (groundfish data)  
+  - Linnea Flostrand (Pacific sardine data)  
+  - Matthew Grinnell (herring assessment outputs)  
+  - John Davidson (salmon data)  
+  - Andrew Edwards (rockfish assessment outputs)  
+- Sarah Z. Rosengard (University of British Columbia) for satellite-based phytoplankton composition data  
+
+These contributions were essential for model development, calibration, and validation.
 ---
 
 ## Citation
