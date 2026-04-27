@@ -36,19 +36,29 @@ The WCVI-E2E model was developed through a multi-stage process, combining indepe
    A lower trophic level model was first implemented and calibrated independently.  
    - Parameter sensitivity analysis was conducted to identify key drivers  
    - Model parameters were optimized using observational datasets and MATLAB’s surrogate optimization algorithm (based on the Metric Stochastic Response Surface method)    
-   - The calibrated model reproduces seasonal and spatial dynamics of nutrients and plankton  
+   - The calibrated model reproduces seasonal and spatial dynamics of nutrients and plankton 
+
+**Notes**
+See Section 2. and specifically section 2.2.3. in  `/docs/thesis.pdf` for a description of the calibration/optimization process  
 
 2. **Ecopath-based Food-Web Model**  
    An upper trophic level model was developed to represent the WCVI food web.  
    - Functional groups were defined across trophic levels  
    - Biomass and energy fluxes were balanced using the Ecopath framework  
-   - The model provides a static, mass-balanced representation of ecosystem structure  
+   - The model provides a static, mass-balanced representation of ecosystem structure
+
+**Notes**
+For a complete description of the WCVI Ecopath model, refer to section 3. in `/docs/thesis.pdf`  
 
 3. **Coupled End-to-End Model (WCVI-E2E)**  
-   The two components were dynamically coupled using a two-way feedback approach.  
+   The two components were dynamically coupled based on the EwE approach, using a two-way feedback approach.  
    - Lower trophic levels provide bottom-up forcing to higher trophic levels  
    - Higher trophic levels impose top-down control on plankton dynamics  
-   - Alternative coupling strategies were tested and evaluated  
+   - Alternative coupling strategies were tested and evaluated
+   - Heuristic parameter tuning due to model complexity 
+
+**Notes**
+Refer to Section 4. of `/docs/thesis.pdf` and `/docs/paper_submitted.docx`.    
 
 ---
 
@@ -65,7 +75,7 @@ The WCVI-E2E model was developed through a multi-stage process, combining indepe
 ```
 WCVI-E2E/
 │
-├── data/        # Input datasets and documentation
+├── data/        # Input datasets and documentation on data collection, cleaning, and formatting
 ├── src/         # Core model implementation
 ├── scripts/     # Simulation, analysis, and plotting scripts
 ├── results/     # Model outputs (including long-term simulations)
@@ -174,7 +184,7 @@ A condensed version focusing on coupling strategies and ecosystem dynamics:
 
 - This codebase is research-oriented and not optimized for general-purpose use
 - The model is tailored to the WCVI ecosystem
-- Large simulations (e.g., 100-year runs) may require significant computational time
+- Large simulations (e.g., 100-year runs) with a monthly archiving time step currently require ~ 48 hours on a local machine, thanks to balancing model granularity with computational constraints
 
 ---
 
