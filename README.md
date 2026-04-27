@@ -38,9 +38,8 @@ The WCVI-E2E model was developed through a multi-stage process, combining indepe
    - Model parameters were optimized using observational datasets and MATLAB’s surrogate optimization algorithm (based on the Metric Stochastic Response Surface method)    
    - The calibrated model reproduces seasonal and spatial dynamics of nutrients and plankton 
 
-**Notes**
-
-See Section 2. and specifically section 2.2.3. in  `/docs/thesis.pdf` for a description of the calibration/optimization process  
+   **Notes**
+   See Section 2. and specifically section 2.2.3. in  `/docs/thesis.pdf` for a description of the calibration/optimization process  
 
 2. **Ecopath-based Food-Web Model**  
    An upper trophic level model was developed to represent the WCVI food web.  
@@ -48,9 +47,8 @@ See Section 2. and specifically section 2.2.3. in  `/docs/thesis.pdf` for a desc
    - Biomass and energy fluxes were balanced using the Ecopath framework  
    - The model provides a static, mass-balanced representation of ecosystem structure
 
-**Notes**
-
-For a complete description of the WCVI Ecopath model, refer to section 3. in `/docs/thesis.pdf`  
+   **Notes**
+   For a complete description of the WCVI Ecopath model, refer to section 3. in `/docs/thesis.pdf`  
 
 3. **Coupled End-to-End Model (WCVI-E2E)**  
    The two components were dynamically coupled based on the EwE approach, using a two-way feedback approach.  
@@ -59,9 +57,8 @@ For a complete description of the WCVI Ecopath model, refer to section 3. in `/d
    - Alternative coupling strategies were tested and evaluated
    - Heuristic parameter tuning due to model complexity 
 
-**Notes**
-
-Refer to Section 4. of `/docs/thesis.pdf` and `/docs/paper_submitted.docx`.    
+   **Notes**
+   Refer to Section 4. of `/docs/thesis.pdf` and `/docs/paper_submitted.docx`.    
 
 ---
 
@@ -163,7 +160,7 @@ A condensed version focusing on coupling strategies and ecosystem dynamics:
 1. The 2D physical box model builds upon and extends the following framework:  
 - Ianson D, Allen SE. A two‐dimensional nitrogen and carbon flux model in a coastal upwelling region. Global Biogeochemical Cycles 2002;16. https://doi.org/10.1029/2001GB001451.
 
- Key extensions include:
+  Key extensions include:
 - Reprogrammed in MATLAB (initially coded in FORTRAN)
 - Addtitional alongshore currents
 - Temperature coded as a prognostic variable
@@ -171,13 +168,13 @@ A condensed version focusing on coupling strategies and ecosystem dynamics:
 2. The biogechemical model builds upon and extends the NEMURO framework:  
 - Kishi MJ, Kashiwai M, Ware DM, Megrey BA, Eslinger DL, Werner FE, et al. NEMURO—a lower trophic level model for the North Pacific marine ecosystem. Ecological Modelling 2007;202:12–25. https://doi.org/10.1016/j.ecolmodel.2006.08.021.
 
- Key modifications of the NEMURO model include:
+  Key modifications of the NEMURO model include:
 - Modifications of the nitrification and decomposition formulations (see `/docs/paper_submitted.docx`)
 
 3. The E2E framework and coupling strategies draw from the WCE model:  
 - Kearney KA, Stock C, Aydin K, Sarmiento JL. Coupling planktonic ecosystem and fisheries food web models for a pelagic ecosystem: Description and validation for the subarctic Pacific. Ecological Modelling 2012;237–238:43–62. https://doi.org/10.1016/j.ecolmodel.2012.04.006.
 
- Key adaptations include:
+  Key adaptations include:
 - Model refactoring for coastal upwelling systems
 - Testing of one-way forcing vs. two-way coupling on ecosystem structure and function
 
