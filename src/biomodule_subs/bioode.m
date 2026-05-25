@@ -40,6 +40,27 @@ function [db, Flx, Diag] = bioode(nemflag,~, bio, G, P, B, Arch, it)
 %
 %   Diag : struct
 %       Intermediate fluxes for diagnostic purposes
+%
+% This file was initially derived from the WCE ecosystem model
+% framework developed by Kelly Kearney and has been substantially
+% restructured and extended for the WCVI-E2E coastal upwelling system.
+%
+% Original WCE framework:
+% Copyright (c) 2008–2015 Kelly Kearney
+%
+% Major redevelopment and extensions by Virginie Bornarel (2017–2026)
+% include:
+%   - adaptation from a 1D water-column model to a 2D coastal domain
+%   - revised trophic coupling and biomass transport handling
+%   - oxygen-dependent biogeochemical processes
+%   - fishing mortality and external forcing integration
+%   - expanded predator/prey flux bookkeeping
+%   - revised domain-integrated flux calculations
+%   - updated diagnostics and ecosystem process representation
+%   - modularization of biological source/sink calculations
+%
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
 
 bio = max(bio, 0); % Negative biomass treated as 0
 

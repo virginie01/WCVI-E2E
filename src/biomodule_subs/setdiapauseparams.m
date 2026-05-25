@@ -1,30 +1,51 @@
 function Biovars = setdiapauseparams(BioIn, Biovars, Grd)
+%SETDIAPAUSEPARAMS Sets seasonal migration (diapause) parameters for large zooplankton (ZL)
 %
+% Biovars = setdiapauseparams(BioIn, Biovars, Grd)
 %
-% OUTPUTS
+% This function configures seasonal vertical migration of large zooplankton (ZL),
+% splitting them into two subgroups (ZL1 active and ZL2 dormant) and tracking their 
+% behavior over time according to model inputs.
 %
-% Biovars:    Structure containing the floowing fields
+% Outputs:
+%   Biovars - Updated struct with:
 %
-%             zlswim:    nt+1 x 1 vector. Indicates 1, 0 or -1 depending on 
+%             .zlswim:   [nt+1 x 1]. Indicates 1, 0 or -1 depending on 
 %                        whether the current time step corresponds to upward 
 %                        migration (i.e. between Sep 15 and April 1), no 
 %                        directed movement (i.e. between April 1 and May 1 )
 %                        or downward migration (i.e. between May 1 and Sep 15)
 %                        Note: no directed movement before the first downward migration
 %                        From January 1992 to Sept 1992
-%             zlsplit:   nt+1 x 1 vector. Percent of ZL1 to transfer to ZL2 at 
+%             .zlsplit:  [nt+1 x 1]. Percent of ZL1 to transfer to ZL2 at 
 %                        each time step during the whole simulation (i.e.
 %                        7% on shelf and 12% on slope between May 1 and Sep 1 and 0% otherwise)
 %
-%             zlcombine: nt x 1 logical array to indicate at what time step
+%             .zlcombine:[nt x 1] logical, indicate at what time step
 %                        both ZL2 and ZL1 recombine (i.e. April 1)
 %
-%             t:         equivalent to Grd.time. 1 x nt array, time elapsed 
+%             .t:        [1 x nt]. Equivalent to Grd.time, time elapsed 
 %                        from model start time to the beginning of each time 
 %                        interval (seconds) 
 %
-% Params that need to be tranferred from ZL to ZL1 and Zl2
+% This file was derived from the original setdiapauseparams routine
+% developed by Kelly Kearney for the WCE/NEMURO framework and modified
+% for the WCVI-E2E coastal upwelling ecosystem model.
+%
+% Original framework:
+% Copyright (c) 2014 Kelly Kearney
+%
+% Modifications and extensions by Virginie Bornarel (2017–2026) include:
+%   - revised diapause parameter handling for WCVI-E2E biological groups
+%   - updated seasonal migration timing and split/recombination logic
+%   - support for WCVI-E2E-specific diapause parameterization
+%   - expanded documentation and ecological interpretation of ZL states
+%   - revised year-handling logic for seasonal transitions
+%
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
 
+%% Transfer ZL parameters to ZL1 and ZL2
 if BioIn.isnem
     epvars = {'alphaeg', 'beta', 'mor0', 'Kmor'};
 else
@@ -34,8 +55,7 @@ for ii = 1:length(epvars)
     Biovars.(epvars{ii})([Biovars.idx.zl1 Biovars.idx.zl2]) = Biovars.(epvars{ii})(Biovars.idx.zl);
 end
 
-% Mark each time step as either a swim up (1), swim down (-1), or
-% no-directed-movement (0) one for the diapause group
+%% Setup migration timing
 
 yr = Grd.start_date(1):Grd.end_date(1);
 yr = [yr yr(end)+1];
@@ -71,28 +91,13 @@ bin = datenum(bin);
 dnsim = datenum(Grd.start_date) + Grd.time/86400;
 [~, binidx] = histc(dnsim, bin);
 
-% nt+1 x 1 vector indicating 1, 0 or -1 depending on whether the current time 
-% step corresponds to upward migration, no directed movement or downward 
-% migration
+
 Biovars.zlswim = val(binidx);
 idx = find(Biovars.zlswim < 0, 1);
-% no directed movement before the first downward migration
 Biovars.zlswim(1:idx-1) = 0; 
 
-% Set when they swim up and down
 
-% dv = datevec(datenum(Grd.start_date) + Grd.time/86400);
-% day = datenum(dv) - datenum([dv(:,1) ones(Grd.nt,2)]);
-% 
-% Biovars.zlswim = zeros(Grd.nt,1);
-% Biovars.zlswim(day >= BioIn.dday(1) & day <= BioIn.dday(2)) = 1; % swim up
-% Biovars.zlswim(day >= BioIn.dday(3) | day <  BioIn.dday(1)) = -1; % stay down
-
-% Mark which time steps involve transfer between ZL2 and ZL1.  zlsplit holds
-% the fraction of the ZL1 population to be transfered to ZL2 at each time
-% step.  zlcombine is a logical marker indicating when to recombine the
-% two.
-
+%% Setup ZL1 → ZL2 split fraction
 d1 = datevec(BioIn.dpStart);
 d2 = datevec(datenum(d1) + BioIn.dpSpan);
 
@@ -118,25 +123,12 @@ bin = datenum(bin);
  
 dnsim = datenum(Grd.start_date) + Grd.time/86400;
 [~, binidx] = histc(dnsim, bin);
-
-
-% percent of ZL1 to transfer to ZL2 at each time step during the whole
-% simulation
 Biovars.zlsplit = val(binidx);
 
-%nt x 1 logical array to indicate at what time step both ZL2 and ZL1
-%recombine
+%% Setup ZL1/ZL2 recombination marker
 Biovars.zlcombine = [false; Biovars.zlswim(2:end) == 0 & Biovars.zlswim(1:end-1) == 1];
 
-% % Set when to split and recombine the two groups
-% 
-% Biovars.zlsplit   = [false; Biovars.zlswim(2:end) == -1 & Biovars.zlswim(1:end-1) ~= -1];
-% d1 = find(Biovars.zlsplit, 1);
-% Biovars.zlswim(1:d1-1) = 0; % keep as one until first down day
-% Biovars.zlcombine = [false; Biovars.zlswim(2:end) == 0 & Biovars.zlswim(1:end-1) == 1];
-
-% Some extras
-
+%% Pass time vector for convenience
 Biovars.t = Grd.time;
-% Biovars.dfrac = BioIn.dfrac;
+
 

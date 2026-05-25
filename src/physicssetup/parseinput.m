@@ -1,23 +1,41 @@
 function In = parseinput(varargin)   
-%PARSEINPUT Parse and check all input variables
+% PARSEINPUT Parse and check all input variables
 %
 % In = parseinput(varargin) 
 %
-% This function checks all input variables passed to the WCVIE2E_physicalmodel.
+% This function checks all input variables passed to physicalmodel.
 % It supplies default values where applicable, and runs some simple
-% validation checks on the values of each variable. See WCVIE2E_physicalmodel
+% validation checks on the values of each variable. See physicalmodel
 % for input variable list.
 % 
 % Input variables:
 %
-%	see WCVIE2E_physicalmodel
+%	see physicalmodel
 %
 % Output variables:
 %
 % 	In:	structure holding all input variables, with default values substituted
 % 		where applicable   
-
-% Copyright 2012 Kelly Kearney 		
+%
+% This file was initially derived from the original parseinput routine
+% developed by Kelly Kearney for the WCE/NEMURO mixed-layer framework
+% and substantially redesigned for the WCVI-E2E coastal upwelling
+% ecosystem model.
+%
+% Original framework:
+% Copyright (c) 2012 Kelly Kearney
+%
+% Major redevelopment and extensions by Virginie Bornarel (2017–2026)
+% include:
+%   - support for 2D coastal box-model geometry and forcing structure
+%   - revised physical and biological model configuration handling
+%   - implementation of WCVI-E2E-specific initialization datasets
+%   - support for physical diagnostic flags and forcing interpolation timing
+%   - restructuring of archive configuration and repository data management
+%   - removal/replacement of mixed-layer-specific forcing and turbulence options
+%
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.	
 
 
 p = inputParser;

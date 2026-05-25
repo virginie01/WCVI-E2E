@@ -97,28 +97,28 @@ function [Grd, TS, Arch]=initialize(In)
 %                       each model time step corresponds.
 %
 %           nbin:       number of archiving time steps
+%         
 %
-%           fileidx:    nt x 2 array, column one holds the index of the
-%                       temporary output file to which results will be
-%                       written for each time step, column 2 tells the
-%                       index of that time step within the file
+% This file was initially derived from the initialize routine developed
+% by Kelly Kearney and Charlie Stock for the WCE/NEMURO mixed-layer
+% framework and has been substantially redesigned for the WCVI-E2E
+% coastal upwelling ecosystem model.
 %
-%           isnewfile:  nt x 1 array, true if model time step is the first
-%                       to be written to a new temporary output file
-% 
-%           endtime:    n x 1, end time of each archiving period (seconds)
+% Original framework:
+% Copyright (c) 2011–2015 Kelly Kearney and Charlie Stock
 %
-%           filedates:  nfile x 2 array, indices of first and last archive
-%                       step included in each temporary output file.
+% Major redevelopment and extensions by Virginie Bornarel (2017–2026)
+% include:
+%   - transition from a 1D water-column grid to a 2D coastal box structure
+%   - implementation of shelf/slope spatial geometry and box metadata
+%   - revised initialization of physical forcing and state variables
+%   - support for forcing interpolation timelines for ODE integration
+%   - restructuring of archive setup for WCVI-E2E table-based outputs
+%   - removal/replacement of mixed-layer turbulence initialization components
+%   - adaptation to coupled physical-biological WCVI-E2E workflows
 %
-%
-%  Tdiag and Sdiag: structures used in case diagnostic tests need to be run         
-%
-% Charlie Stock
-% cstock@alum.mit.edu
-%
-% modified by Kelly Kearney
-% modified by Virginie Bornarel
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
 
 %------------------------------
 %Calculate the grid and
@@ -153,10 +153,10 @@ end
 dnstart=datenum(Grd.start_date);
 dnend=datenum(Grd.end_date);
 
-Grd.tmax = (dnend - dnstart)*86400; %number of seconds elapsed from 1 Jan 1992 at midnight to 1 jan 2017 at midnight
-Grd.nt = floor(Grd.tmax/In.dt); %total number of time steps throughout the entire simulation
+Grd.tmax = (dnend - dnstart)*86400;   % seconds elapsed over simulation
+Grd.nt = floor(Grd.tmax/In.dt);       % total internal time steps
 
-Grd.time=(0:Grd.nt)*In.dt;
+Grd.time=(0:Grd.nt)*In.dt;            % 1 x (nt+1) seconds since start
 
 % For screen print counter: print progress at the end of each day
 

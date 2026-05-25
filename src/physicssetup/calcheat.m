@@ -1,34 +1,52 @@
 function [Qi, Qs, Ql, Qlw] = calcheat(Qi, atmp, dpnt, Tsrf, wspeed10, Qo, nx)
-%CALCHEAT Calculate heating factors
+%CALCHEAT Estimate surface heat fluxes: sensible, latent, and longwave
 %
-% [Qi, Qs, Ql, Qlw] = calcheat(Qi, atmp, dpnt, Tsrf, wspeed10, ...
-%                                       Qo, alb, nx)
+% [Qi, Qs, Ql, Qlw] = calcheat(Qi, atmp, dpnt, Tsrf, wspeed10, Qo)
 %
-% Input variables:
+% Inputs:
 %
-%   Qi:         1 x nx array. Incident solar radiation (W m^-2). 
+%   Qi:         1 x nx. Incident shortwave radiation (W m^-2). 
 %
-%   atmp:       1 x nx array. Air temperature (deg C). 
+%   atmp:       1 x nx. Air temperature (deg C). 
 %
-%   dpnt:       1 x nx array. Dewpoint temperature (deg C). 
+%   dpnt:       1 x nx. Dew point temperature (deg C). 
 %
-%   Tsrf:       1 x nx array. Sea surface temperature (deg C). 
+%   Tsrf:       1 x nx. Sea surface temperature (deg C). 
 %
-%   wspeed10:   1 x nx array. Wind speed 10 m above ocean surface (m/s). 
+%   wspeed10:   1 x nx. Wind speed at 10 m above ocean surface (m/s). 
 %
 %   Qo:         Scalar. Clear-sky irradiance (W m^-2).
 %
 %   nx:         Scalar. Number of horizontal levels. 
 %
-% Output variables:
+% Outputs:
 %
-%   Qi:         1 x nx array. Incident solar radiation (W m^-2).
+%   Qi:         Same as input
 %
-%   Qs:         1 x nx array. Sensible heat flux (W m^-2).
+%   Qs:         1 x nx. Sensible heat flux (W m^-2).
 %
-%   Ql:         1 x nx array. Latent heat flux (W m^-2).
+%   Ql:         1 x nx. Latent heat flux (W m^-2).
 %
-%   Qlw:        1 x nx array. Longwave heat flux (W m^-2).
+%   Qlw:        1 x nx. Longwave heat flux (W m^-2).
+%
+% References:
+%   Friehe & Schmitt (1976), Marshall & Plumb (2008), Simpson & Paulson (1979)
+%
+% This file was derived from the original calcheat routine developed
+% by Kelly Kearney for the WCE/NEMURO framework and modified for use
+% in the WCVI-E2E coastal upwelling ecosystem model.
+%
+% Original framework:
+% Copyright (c) 2010 Kelly Kearney
+%
+% Modifications by Virginie Bornarel (2017–2026) include:
+%   - adaptation to horizontally resolved (1 x nx) forcing fields
+%   - revised dimensional handling and vectorized operations
+%   - simplified heat-flux interface and output structure
+%   - updated documentation and parameter descriptions
+%
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
 %
 %-----------------------------
 % Calculate sensible heat flux

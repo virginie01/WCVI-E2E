@@ -142,6 +142,27 @@ function varargout = physicalmodel(varargin)
 %     physicalmodel(...) -> returns a struct containing initialized state
 %
 %
+% This file was initially derived from the mixed_layer framework
+% developed by Kelly Kearney and Charlie Stock for the WCE/NEMURO
+% ecosystem model and has been substantially redesigned and extended
+% for the WCVI-E2E coastal upwelling ecosystem model.
+%
+% Original framework:
+% Copyright (c) 2011–2015 Kelly Kearney and Charlie Stock
+%
+% Major redevelopment and extensions by Virginie Bornarel (2017–2026)
+% include:
+%   - transition from a 1D mixed-layer model to a 2D coastal box model
+%   - implementation of coastal upwelling circulation and boundary forcing
+%   - integration of Ecopath-NEMURO hybrid biological modules
+%   - revised transport, mixing, and advection frameworks
+%   - new forcing-data and archive-management systems
+%   - support for coupled physical-only and end-to-end ecosystem modes
+%   - expanded diagnostics, fisheries, and trophic-flux bookkeeping
+%   - restructuring of model initialization and time-stepping workflows
+%
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
 
 % ------------------------------------------------------------------------
 %  Setup and input parsing

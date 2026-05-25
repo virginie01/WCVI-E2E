@@ -1,58 +1,86 @@
 function [names, nbsv, A] = setstatevars(BioIn)
-%SETSTATEVARS State variable setup for mixed_layer wce module
+% SETSTATEVARS State variable setup for WCVI-E2E biological module
 %
-% OUTPUTS
+% This function defines and organizes the state variables used in the
+% WCVI-E2E biological model (Ecopath-NEMURO hybrid). It returns their
+% names, units, count, and indexing information needed for simulation
+% of trophic interactions and physical-biogeochemical processes.
 %
-% nbsv:        scalar. Number of state variables. Corresponds to the number of functional
-%              groups in the Ecopath model and the NEMURO variables that don't
-%              overlap with Ecopath. Two functional groups (ZL1 and ZL2) are added 
-%              if diapause is turned on.
+% INPUT:
+% BioIn : Structure holding biological configuration data, including:
+% - BioIn.isnem: logical, true if using NEMURO-only mode
+% - BioIn.EM: Ecopath model info
+% - BioIn.types: group types (e.g. 'z', 'n', etc.)
+% - BioIn.diapause: logical, include diapause groups if true
 %
-% names:       nbsv x 3 cell array. Column 1 = short name; column 2 = long name;
-%              column 3 = units. Same order as in Ecopath and NEMURO variables that don't overlap 
-%              with Ecopath are placed at the end in same order as in nemnames. Short names are the 
-%              same as in type. Long names are the ones in Ecopath (for NEMURO variables that don't 
-%              overlap with Ecopath = nemnames(:,2)). 
-%              ZL1 and ZL2 are added at the end if diapause is on.
+% OUTPUTS:
 %
-% A:           Structure with the following fields:
+%   nbsv       Scalar. Total number of state variables. Includes:
+%              - Functional groups defined in the Ecopath model
+%              - NEMURO variables not overlapping with Ecopath
+%              - (Optional) Two additional groups (ZL1 and ZL2) if diapause is enabled
+%
+%   names      Cell array of size [nbsv x 3]. Describes each state variable:
+%              - Column 1: Short name (e.g., 'ZS', 'NO3'), matching BioIn.types
+%              - Column 2: Long name (from Ecopath or nemnames)
+%              - Column 3: Units (e.g., 'mol N m^-3')
+%              The order is: Ecopath groups first, followed by unmatched NEMURO variables,
+%              and ZL1/ZL2 at the end if diapause is active.
+%
+% A:           Struct containing metadata and mappings related to state variables:
 %              
-%              idx: location/index of NEMURO variables. Two groups
-%                   "mystery" and "fisheries" are added at the end of the 
-%                    list.
+%       A.idx: Index of specific NEMURO or derived variables: e.g.,
+%              A.idx.zs, A.idx.no3, A.idx.pon, etc...
 %
-%              nemidx: column vector indicating index/location of NEMURO variables in
-%                      the cell array {names}. The length of the vector depends on the
-%                      number of NEMURO variables.
+%       A.nemidx: Vector. Indices of NEMURO variables in the `names` array.
 %
-%              extrazooidx: column vector indicating index/location of extrazoo 
-%                           variables in the cell array {names}. The length of this 
-%                           vector depends on the number of extrazoo variables. Optional 
-%                           output (i.e. only when BioIn.isnem is turned off)
+%       A.extrazooidx: Vector. Indices of extra zooplankton variables in `names`.
+%                       Present only if BioIn.isnem is false.
 %
-%              nekidx: column vector indicating index/location of nekton variables in
-%                      the cell array {names}. The length of this vector depends on
-%                      the number of nekton variables.Optional output (i.e. only
-%                      when BioIn.isnem is turned off)
-
-%              is[extrazoo]/[nek]/[zoo]/[phy]/[det]: logical vector
+%       A.nekidx: Vector. Indices of nekton variables in `names`.
+%                       Present only if BioIn.isnem is false.
 %
-%              links: nbsv x nbsv matrix. Code used to describe different
-%                     trophic interactions (see lines 134-140) and 0 when no trophic
-%                     interaction takes place according to the DC matrix in
-%                     Ecopath. Note: if diapause is on, ZL1 and ZL2 don't eat and
-%                     don't get eaten.
+%       A.is[extrazoo]/[nek]/[zoo]/[phy]/[det]: logical vector
+%
+%       A.links: [nbsv x nbsv] matrix. Describes trophic interactions:
+%                - Value depends on consumer-resource interaction type
+%                - Value = 0 if no interaction (based on Ecopath DC matrix)
+%                - If diapause is active, ZL1 and ZL2 have no interactions
 %  
-%              fisheries: nbsv x ngear matrix. Contains 1 when species are
-%                         harvested by a given gear and 0 otherwise.
-%
-%              nekdist: Imported from BioIn.nekdist
+%       A.fisheries: [nbsv x ngear] matrix. Logical matrix indicating if a 
+%                    group is harvested by a specific gear (1 = yes, 0 = no)
 %
 %
+%       A.diapause: Logical. Indicates if diapause mode is active.
 %
-%-------------------------
-% Set state variable names
-%-------------------------
+%       A.idx.mys:  Index of the synthetic "mystery" group (for unaccounted source/sink flows).
+%
+%       A.idx.fish: Index of the synthetic "fisheries" group (aggregated catch group).
+%
+%       A.dzmod_fn: The dz modifier function handle (or [] if none). Passed through from BioIn.
+%
+% This file was derived from the original setstatevars routine
+% developed by Kelly Kearney for the WCE/NEMURO framework and
+% substantially modified for the WCVI-E2E coastal upwelling ecosystem model.
+%
+% Original framework:
+% Copyright (c) 2008–2015 Kelly Kearney
+%
+% Major modifications and extensions by Virginie Bornarel (2017–2026) include:
+%   - revised state-variable ordering for WCVI-E2E/NEMURO configurations
+%   - expanded trophic interaction categories, including detrital feeding
+%   - addition of fisheries metadata and harvested-group bookkeeping
+%   - support for extra zooplankton and nekton index tracking
+%   - revised NEMURO-only interaction filtering using Ecopath diet data
+%   - updated diapause-group handling and model metadata
+%
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
+
+%------------------------------------------------
+% Define standard NEMURO variable names and units
+%------------------------------------------------
+
 
 nemnames = {...
     'PS',       'PS',          'molN/m^3'
@@ -67,6 +95,11 @@ nemnames = {...
     'SiOH4',    'SiOH4',       'molSi/m^3'
     'Opal',     'Opal',        'molSi/m^3'
     'PLsi'      'PLsi',        'molSi/m^3'};
+
+%-------------------------------------
+% Initialize variable names and count
+%-------------------------------------
+
 
 if BioIn.isnem
     names = nemnames;
@@ -101,9 +134,9 @@ else
     names(isz,1) = cellstr(num2str((1:sum(isz))', 'Z%02d'));
 end
 
-%-------------------------
-% Identifiers
-%-------------------------
+%--------------------------
+% Assign key group indices
+%--------------------------
 
 A.idx.ps    = find(strcmp(names(:,1), 'PS'));
 A.idx.pl    = find(strcmp(names(:,1), 'PL'));
@@ -119,9 +152,9 @@ A.idx.zl    = find(strcmp(names(:,1), 'ZL'));
 A.idx.zp    = find(strcmp(names(:,1), 'ZP'));
 
 
-%-------------------------
-% Links
-%-------------------------
+%-------------------------------------------
+% Determine NEMURO, zoo, nekton identifiers
+%-------------------------------------------
 
 if ~BioIn.isnem
     
@@ -135,12 +168,7 @@ else
     A.nemidx = 1:nbsv;
 end
     
-    %nolive= or(strcmp(names(:,1), 'N03'), strcmp(names(:,1),'NH4'),...
-    %    strcmp(names(:,1),'SiOH4'),strcmp(names(:,1),'DON'),...
-    %    strcmp(names(:,1),'PON'),strcmp(names(:,1),'Opal'),...
-    %    strcmp(names(:,1),'PLsi'));
     
-    %[~,liveidx]=ismember(names(~nolive,1),names(:,1));
     
 if ~BioIn.isnem
     A.isextrazoo = regexpfound(names(:,1), 'Z[0-9][0-9]');
@@ -155,7 +183,9 @@ else
 end
     
 
-    % Links
+%----------------------------------        
+% Build trophic interaction matrix
+%----------------------------------  
     
 if ~BioIn.isnem 
     

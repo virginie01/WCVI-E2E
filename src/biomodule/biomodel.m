@@ -1,30 +1,52 @@
 function varargout = biomodel(action, varargin)
-%BIOMODEL biological module
+% BIOMODEL Biological module for the WCVI-E2E model
 %
-% This module simulates a mixed planktonic-nektonic ecosystem, based on
-% a combination of models derived mainly from NEMURO and Kerim Aydin's
-% version of Ecosim, with a little bit of COBALT thrown in for flavor.
+% This function serves as the biological module for the WCVI-E2E coupled
+% physical-biological ecosystem model. It simulates a simplified 
+% planktonic-nektonic food-web in a 2D costal upwelling domain, combining 
+% elements from the NEMURO NPZD-type biogeochemical model and Kerim Aydin's 
+% version of Ecosim
 %
-% A note on units: The biomass of all critters is saved to file in mol
-% N[Si][Fe]/m^3.  For nektonic critters, all biomass is placed in the
-% surface cell, and actually represents the total over the entire water
-% column; multiply by the thickness of the surface layer to get the true
-% biomass, in mol N/m^2.
+% The function acts as a dispatcher for three sub-modules:
+%   - 'init'       : Initializes biological variables and parameters
+%   - 'sourcesink' : Computes biological source and sink terms
+%   - 'vertmove'   : Calculates vertical migration of mobile organisms
 %
-% See biomodule.m for function syntax descriptions.  For fields that must be 
-% present in the In structure (passed to mixed_layer as parameter/value pairs), 
-% see the help for parsewcenemin.m. true false true false false
+% Note on biomass units:
+%   Biomass is stored in mol N[Si]/m³. For nektonic organisms, biomass is 
+%   assigned to the demersal shelf layer and represents the total biomass 
+%   over the entire model area. Multiply by the corresponding box volume 
+%   to obtain total mol N, and then divide by surface area to get areal biomass 
+%   in mol N·m⁻².
+%
+%
+% This file was initially derived from the original WCE biological module 
+% developed by Kelly Kearney, and subsequently extended and restructured
+% for the WCVI-E2E coastal upwelling ecosystem model.
+%
+% Original code:
+% Copyright (c) 2008–2015 Kelly Kearney
+%
+% Modified and extended by Virginie Bornarel (2017–2026)
+% for application to the WCVI-E2E coastal upwelling ecosystem model.
+%
+% Major modifications include:
+%   - adaptation from a 1D water-column framework to a 2D coastal domain
+%   - revised ecosystem structure and state-variable handling
+%   - integration of WCVI-specific forcing and diagnostics
+%   - modified biomass initialization and transport handling
+%   - restructuring and expansion of biological process routines
+%
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
 
-% Copyright 2008-2015 Kelly Kearney
-
-%nin(1) = nargin(@init) + 1;
-%nin(2) = nargin(@sourcesink) + 1;
-%nin(3) = nargin(@vertmove) + 1;
+% Define output size for each sub-function
 
 nout(1) = nargout(@init);
 nout(2) = nargout(@sourcesink);
 nout(3) = nargout(@vertmove);
 
+% Call appropriate sub-function based on 'action'
 switch action
     case 'init'
         
@@ -49,6 +71,7 @@ switch action
         error('Invalid action for biological module');
 end
 
+% Assign outputs
 [varargout{1:nargout}] = out{:};
         
 %**************************************************************************
@@ -56,24 +79,21 @@ end
 function [BioIn, bio, ismixed, Biovars, names, diagnames] = init(In, Grd)
 
 %------------------------------
-% Parse and check input
+% 1. Parse Input Structure
 %------------------------------
 
 BioIn = parsebioinput(Grd, In);
 
 %------------------------------
-% Variable names
+% 2. Define State Variables
 %------------------------------
 
 [names, nbsv, Biovars] = setstatevars(BioIn); 
 
-%----------------------------
-% Indicators for mixing and 
-% bottom-forcing
-%----------------------------
+%------------------------------
+% 3. Set Physical Mixing Flags
+%------------------------------
 
-% Plankton mixed, nekton not
-% If no-mix (debugging), nothing is mixed.
 if BioIn.isnem && ~BioIn.nomix
     ismixed = true(nbsv,1);
 elseif BioIn.isnem && BioIn.nomix
@@ -88,29 +108,25 @@ if Biovars.diapause
     ismixed([Biovars.idx.zl1 Biovars.idx.zl2]) = true;
 end
 
-%---------------------------
-% diagnostic variables
-%---------------------------
+%------------------------------
+% 4. Diagnostic Variables
+%------------------------------
 
 [diagnames, Biovars] = setdiagnosticsvars(BioIn, names, ismixed, Biovars);
 
-%----------------------------
-% Initial biomass for
-% state variables
-%----------------------------
+%------------------------------
+% 5. Initialize Biomass Array
+%------------------------------
 
 bio = zeros(Grd.nz, Grd.nx, nbsv);
 
-% Nemuro-derived variables 
-
+% Fill with nemuro and extra zoo 
 bio(:,:,Biovars.nemidx(1:11)) = BioIn.bnem0(:,:,:); % mol/m^3
-
-% Extra zooplankton groups 
 if ~BioIn.isnem
-bio(:,:,Biovars.extrazooidx) = BioIn.bz0(:,:,:);  % mol N/m^3
+    bio(:,:,Biovars.extrazooidx) = BioIn.bz0(:,:,:);  % mol N/m^3
 end
-% nekton groups
 
+% Convert and assign Ecopath biomass to nekton groups
 EM = BioIn.EM;
 if isempty(BioIn.ensdata)
     Ep = EM.ecopath;
@@ -118,41 +134,38 @@ else
     [~, Ep] = EM.ecopath('ensemble', BioIn.ensdata);
 end
 
-% change units
 Ep.b = Ep.b.*0.001885; % from t.km-2 into molesN.m-2
 Ep.q0 = (Ep.q0.*0.001885)./31536000; %from t.km-2.yr-1 into molesN.m-2.s-1
 Ep.pb = Ep.pb./31536000;
 Ep.otherMortRate = Ep.otherMortRate./31536000;
 
 if ~ BioIn.isnem    
-bnek = Ep.b(Biovars.isnek).*BioIn.area; % mol N.m-2 * m^2= molN
-%Nekton biomass stored in demersal layer where volume doesn't change over
-%time. Although actually per area, here stored as per volume for
-%consistency
-bnek = bnek./(In.dz(3,1).*In.dx(3,1).*(BioIn.area./(In.dx(1,1)+In.dx(1,2))));%mol N.m-3-
-bio(3,1,Biovars.isnek) = reshape(bnek,1,1,length(bnek));
+    bnek = Ep.b(Biovars.isnek).*BioIn.area; % mol N.m-2 * m^2= molN
+    bnek = bnek./(In.dz(3,1).*In.dx(3,1).*(BioIn.area./(In.dx(1,1)+In.dx(1,2))));%mol N.m-3-
+    bio(3,1,Biovars.isnek) = reshape(bnek,1,1,length(bnek));
 end
-% PL silica is proportional to PL N
 
+%------------------------------
+% 6. Derived Variables
+%------------------------------
 pln = bio(:,:,Biovars.idx.pl);
 plsi = pln .* BioIn.NemParam.RSiN;
 bio(:,:,Biovars.idx.plsi) = plsi;
-
-% If diapause, split ZL biomass
 
 if Biovars.diapause
     bio(:,:, Biovars.idx.zl1) = bio(:,:, Biovars.idx.zl);
     bio(:,:, Biovars.idx.zl) = 0;
 end
 
-%----------------------------
-% Variables needed for ODE
-%----------------------------
-
-% Params shared with nemurokak
+%------------------------------
+% 7. Biological Parameters
+%------------------------------
 
 [Biovars, Np] = setbioparams(BioIn, Biovars.nemidx, nbsv, Grd, Biovars);
 
+%------------------------------
+% 8. Overalp between NEMURO and Ecopath
+%------------------------------
 if BioIn.isnem
     % number of groups and their idx: groups in NEMURO that overlap with EwE model
     [isEwEvar,EwEidx] = ismember(lower(names(:,1)),BioIn.types);
@@ -163,6 +176,10 @@ if BioIn.isnem
     isEwEliving = [isEwEliving;false(nbsv-5,1)];
 end
 
+
+%------------------------------
+% 9. Mortality, Feeding, Production
+%------------------------------
 
 % Mortality exponent
 if BioIn.isnem
@@ -200,11 +217,9 @@ else
    Biovars.gs(1:EM.nlive) = EM.groupdata.gs(1:EM.nlive);
 end
 
-% For x, d, and theta, I accept data in one of two ways:
-% 1) vector of P-value log-tranformed-anomaly-from-base values, identical
-% to those used in the functional response file input for aydin-ecosim
-% 2) matrix of values for each group pair.  These values are NOT anomalies
-% but actual values to be used in the functional response equations.
+%------------------------------
+% 10. Feeding Parameters (x, d, theta)
+%------------------------------
 
 dcmask = table2array(EM.dc) == 0;
 
@@ -247,18 +262,21 @@ else
     Biovars.theta = padarray(theta, [n n], 'post');
 end
 
-% Add ngroup x ngroup array grmax and thresh in case I don't use the
-% planktonic foraging arena
+%------------------------------
+% 11. Set feeding parameters (grmax, thresh)
+%------------------------------
 
 if ~BioIn.isnem
-grmax = BioIn.grmax;
-thresh = BioIn.thresh;
-n = nbsv - EM.ngroup;
-Biovars.grmax = padarray(grmax, [n n], 'post');
-Biovars.thresh = padarray(thresh, [n n], 'post');
+    grmax = BioIn.grmax;
+    thresh = BioIn.thresh;
+    n = nbsv - EM.ngroup;
+    Biovars.grmax = padarray(grmax, [n n], 'post');
+    Biovars.thresh = padarray(thresh, [n n], 'post');
 end
 
-% Zooplankton: grazing same as predation, but in volumetric terms
+%------------------------------
+% 12. Adjustments
+%------------------------------
 
 Biovars.b0v = Biovars.b0./560;% mol N m^-3 based on domain area 2.936.*10^10 m2 and bottom depths 120m+1000m. But I don't think this figure matter since the curve tries to reproduce the 
 Biovars.q0v = Biovars.q0./560; % mol N m^-3 s^-1
@@ -297,7 +315,10 @@ else
     Biovars.p0v = Biovars.p0./560;% mol N m^-3 s^-1 
 end
 
-% Temperature factors
+%------------------------------
+% 13. Set feeding parameters (kgra, lambda)
+%------------------------------
+
 if BioIn.isnem
     Biovars.Kgra = zeros(nbsv,1);
     Biovars.Kgra([Biovars.idx.zs,Biovars.idx.zl,Biovars.idx.zp]) = Np.Kgra(3:5);    
@@ -316,20 +337,22 @@ else
     Biovars.lambda(Biovars.isextrazoo) = BioIn.lambda;
 end
 
-
 tempfac0 = exp(Biovars.Kgra .* BioIn.temp);
 Biovars.gourmetPL = exp(-Biovars.grpusai(2,5).*(BioIn.ZL + BioIn.ZS));
 Biovars.gourmetZS = exp(-Biovars.grpusai(3,5).*BioIn.ZL);
 
 Biovars.q0vat0 = bsxfun(@rdivide, Biovars.q0v, tempfac0'); %nb x nb / 1 x nbsv
 
-% Mortality (using ecopath-based mortality)
+%------------------------------
+% 11. Compute mortality coefficient (m0coef)
+%------------------------------
+
 if BioIn.isnem
-  Biovars.m0 = zeros(nbsv,1);
-  Biovars.m0(isEwEliving) = Ep.otherMortRate(EwElivingidx); %s-1
+    Biovars.m0 = zeros(nbsv,1);
+    Biovars.m0(isEwEliving) = Ep.otherMortRate(EwElivingidx); %s-1
 else
-Biovars.m0 = zeros(nbsv,1);
-Biovars.m0(1:EM.nlive) = Ep.otherMortRate(1:EM.nlive);  % s^-1
+    Biovars.m0 = zeros(nbsv,1);
+    Biovars.m0(1:EM.nlive) = Ep.otherMortRate(1:EM.nlive);  % s^-1
 end
 
 if any(Biovars.m0 < 0)
@@ -346,13 +369,14 @@ else
     m0(1:EM.nlive) = Ep.otherMortRate(1:EM.nlive);  % s^-1
 end
 
-
 m0b = m0 .* Biovars.b0; % mass-balanced flux, molN/m^2/s. nbsv x 1 array
-                         
-                         
+                                            
 Biovars.m0coef = m0b./(Biovars.b0.^Biovars.m0exp);
 Biovars.m0coef = max(Biovars.m0coef, 0); % get rid of NaNs (and I guess negatives, if they ever appeared, though they shouldn't)
 
+%------------------------------
+% 12. Diapause handling
+%------------------------------
 if Biovars.diapause
     EwEzlidx = strcmp(BioIn.types, 'zl');
     
@@ -373,25 +397,40 @@ end
 %**************************************************************************
 
 function [newbio, db, Flx, Diag] = sourcesink(nemflag, oldbio, P, B, G, O2, Arch, it, varargin)
+%SOURCESINK Wrapper for one biology integration step
+%
+% [newbio, db, Flx, Diag] = sourcesink(nemflag, oldbio, P, B, G, O2, Arch, it, fishForcing)
+%
+% PURPOSE
+%   Integrate biological ODEs over one time step via integratebio + wcvie2eode
+%
+% INPUTS
+%   nemflag : logical, passed to wcvie2eode
+%   oldbio  : [nz x nx x nb] current state (mol N m^-3)
+%   P, B, G, Arch, it : model structs / time index
+%   O2      : [nz x nx] oxygen at this time step (stored in B.O2)
+%   varargin:
+%       optionally fish forcing array (stored in B.fish)
+%
+% OUTPUTS
+%   newbio : updated state
+%   db     : dB/dt evaluated by solver (as returned by integratebio)
+%   Flx    : flux bookkeeping
+%   Diag   : diagnostics (plus Diag.extrasi for silica clamp)
 
-%--------------------------------------------------------------------------
-% Set up parameters and forcing data at current time step that will be 
-% passed to main ODE function
-%--------------------------------------------------------------------------
-
+% ---- Attach forcing to B for this step (avoid side effects on caller)
 B.O2 = O2; % nz x nx array current o2
 
 
-% forcing data at current time step for all relevant critters
-% 3 x n cell array. row 1 = pool index; row 2 = time-series type (same code as in Ecosim);
+% 3 x n cell array
+% row 1 = pool index; 
+% row 2 = time-series type (same code as in Ecosim);
 % row 3 = data at current time step; 
 if (length(varargin) == 1)
     B.fish = varargin{1};
 end
 
-%--------------------------------------------------------------------------
-% Split/combine ZL groups as necessary for diapause
-%--------------------------------------------------------------------------
+% ---- Apply diapause split/combine rules to the state passed to the ODE
 if B.diapause
     it = find(B.t == G.t);
     zltot = sum(oldbio(:,:,[B.idx.zl1 B.idx.zl2]), 3);
@@ -406,9 +445,7 @@ if B.diapause
     oldbio(:,:,B.idx.zl) = 0;
 end
 
-%--------------------------------------------------------------------------
-% Integrate biology over this time step
-%--------------------------------------------------------------------------
+% ---- Integrate biology over this time step
 [newbio, db, Flx, Diag, badthings] = integratebio(@bioode, nemflag, G, ...
     oldbio, P, B, Arch, it, B.odesolver{:});
 
@@ -416,8 +453,7 @@ if B.diapause
     newbio(:,:,B.idx.zl) = newbio(:,:,B.idx.zl1) + newbio(:,:,B.idx.zl2);
 end
 
-% Check and correct for silica issue
-
+% ---- Clamp negative silica pool (known numerical artifact)
 [nz,nx,nb] = size(newbio);
 A = false(nz,nx,nb);
 isneg = newbio(:,:,B.idx.plsi) < 0;
@@ -430,26 +466,7 @@ Diag.extrasi(isneg) = -C(isneg);
 newbio(A) = 0;
 badthings(A) = false;
 
-% Check for problems
 
-%if any(badthings(:))
-%    [ridx,cidx,tidx] = ind2sub(size(badthings),find(badthings));
-%    nb = length(ridx);
-%    errstr = cell(nb,1);
-%    for ii = 1:nb
-%        badbio = newbio(ridx(ii), cidx(ii), tidx(ii));
-%        if isnan(badbio)
-%            errstr{ii} = sprintf('NaN: depth %d, longitude %d, critter %d, time = %d', ridx(ii), cidx(ii), tidx(ii), G.t);
-%        elseif isinf(badbio)
-%            errstr{ii} = sprintf('Inf: depth %d, longitude %d, critter %d, time = %d', ridx(ii), cidx(ii), tidx(ii), G.t);
-%        elseif badbio < 0
-%            errstr{ii} = sprintf('Neg: depth %d, longitude %d, critter %d, time = %d', ridx(ii), cidx(ii), tidx(ii), G.t); 
-%        end
-%    end
-%    errstr = sprintf('  %s\n', errstr{:});
-%    errstr = sprintf('Biology out of range:\n%s', errstr);
-%    error('WCE:biologyOutOfRange', errstr);
-%end
                       
 %**************************************************************************
 

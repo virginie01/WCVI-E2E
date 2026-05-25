@@ -65,8 +65,22 @@ function [t,y, varargout] = odewrap(solver, fun, nemflag, tspan, y0, options, va
 %   out#:       additional output variables returned by the differential
 %               equation function.  These may be any size or data type,
 %               depending of the specific function being evaluated.
-
-% Copyright 2008 Kelly Kearney
+%
+% This file was derived from the original odewrap utility developed
+% by Kelly Kearney for the WCE/NEMURO framework and modified for use
+% in the WCVI-E2E coastal upwelling ecosystem model.
+%
+% Original framework:
+% Copyright (c) 2008 Kelly Kearney
+%
+% Modifications by Virginie Bornarel (2017–2026) include:
+%   - support for WCVI-E2E/NEMURO mode flags
+%   - revised ODE function signatures and wrapper calls
+%   - adaptation to WCVI-E2E biological state-array conventions
+%   - updated documentation and dimensional comments
+%
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
 
 %------------------------------
 % Check input and output

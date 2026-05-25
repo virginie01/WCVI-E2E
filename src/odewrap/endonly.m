@@ -16,8 +16,21 @@ function varargout = endonly(varargin)
 %
 %   anew...:    three-dimensional arrays holding first row of each input
 %               array, respectively
-
-% Copyright 2009 Kelly Kearney
+%
+% This file was derived from the original endonly utility developed
+% by Kelly Kearney for the WCE/NEMURO framework and modified for use
+% with WCVI-E2E multidimensional biological state arrays.
+%
+% Original framework:
+% Copyright (c) 2009 Kelly Kearney
+%
+% Modifications by Virginie Bornarel (2022–2026) include:
+%   - adaptation from 3D to 4D array handling
+%   - updated indexing for WCVI-E2E state-variable structures
+%   - revised dimensional documentation
+%
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
 
 for ivar = 1:nargin
     temp = squeeze(varargin{ivar}(end,:,:,:));

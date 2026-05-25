@@ -1,73 +1,58 @@
 function [db, Flx] = mixtracerBio_ode(time, bio, In, Grd, ismixed, mld, ent, lb, Sig, tauy, xfil, buoy, names)
-%   MIXTRACER Calculates mixing of a tracer in WCVIE2E_physicalmodel
+% MIXTRACERBIO_ODE Computes mixing and advection for biological tracers in WCVIE2E
 %
-%   dxdt = mixtracer_ode(tracer, In, Grd, mld, ent, lb, Sig, tauy,prate, it, varargin)
+% This function calculates vertical mixing, horizontal mixing, and lateral
+% advection of biological tracers at a given simulation time step.
 %
-%   Input variables:
+% INPUTS:
 %
-%      bio     :  nz x nx x nbsv array. Concentration of biological variables in each spatial box at 
-%                 the current time step (mol N.m-3).
-%
-%      In      :  structure holding user-supplied input variables
-%
-%      Grd     :  Structure holding spatial and temporal grid data for
-%                 WCVIE2E_physicalmodel simulations
-%
-%      ismixed :  nbsv x 1 array. Logical vector indicating whether a given
-%                 group is mixed (i.e. "planktonic" groups)
-%
-%      mld     :  Structure holding mixed layer depth data (m) at current time steps
-%
-%      ent     :  structure holding entrainment rate data (s^-1) at current time steps
-%
-%      lb      :  Nested structure holding lateral boundary concentrations of tracer 
-%                 (units vary based on tracer). First level = "zooplanktonic" group (i.e. mixed). 
-%                 Second level:
-%                 t:    Grd.time(it):In.datadt:Grd.time(it+1), time (seconds from sim start time)
-%                 o:    1 x 6 array specifying the boundary
+% time     - Scalar. Time elapsed since simulation start (in seconds)
+% bio      - [nz x nx x nbsv] Biological tracer concentrations (mol N m⁻³)
+% In      :  structure holding user-supplied input variables
+% Grd      - Struct. Grid and temporal data
+% ismixed  - [nbsv x 1] Logical vector, true for planktonic (mixed) groups
+% mld      - Struct. Mixed layer depth (m) [time x nx]
+% ent      - Struct. Entrainment rate (s⁻¹) [time x nx]
+% lb       - Nested Struct. Lateral boundary concentrations for each group. 
+%            First level = "zooplanktonic" group (i.e. mixed). 
+%            Second level:
+%                 t:    Grd.time(it):In.datadt:Grd.time(it+1)
+%                 o:    1 x 14 array specifying the boundary
 %                 data: length(t) x length(o) array holding the data for the current time steps
 %                 Data: Column 1 = open ocean upper layer; Column 2 = open ocean lower layer; 
 %                 Column 3 = rain shelf; Column 4: rain slope; Column 5 = freshwater from run-offs; 
-%                 Column 6 = VICC
+%                 Column 6 = VICC shelf ul; Column 7 = VICC shelf ll; Column 8 = sbc shelf ul; 
+%                 Column 9 = sbc shelf ll'; Column 10 = sbc slope ul; Column 11 = dc shelf ul; 
+%                 Column 12 = dc shelf ll; Column 13 = dc slope ul; Column 14 = cu slope ll
+% Sig      - [nz x nx] Density field (kg m⁻³)
+% tauy     - Struct. North-south wind stress (N m⁻²) [time x nx]
+% xfil     - Struct. Cross-shelf transport filter (see advection.m)
+% buoy     - Struct. Buoyancy and alongshore currents (see advection.m)
+% names    - Cell array [nbsv x 3]. Column 1: short name, 2: long name, 3: units
 %
-%      Sig     :  nz x nx array holding the density (kg.m^-3) values in each
-%                 spatial box at the current time step
+% OUTPUTS:
+% db  - [nz x nx x nbsv] Rate of change of tracer concentrations (mol N m⁻³ s⁻¹)
+% Flx - Struct with tracer flux fields:
+%          V, H, X, CS, R, P, VICC, DC, SBC, CU – all [nbsv+2 x nbsv+2 x nz x nx]
+%          and mol N m⁻³ s⁻¹. Here sources and sinks are the same variables
 %
-%      tauy    :  Structure holding N-S wind stress data (N.m^-2) at current time steps
-%
-%      prate   :  Structure holding precipitation rates at current time steps. Expressed 
-%                 in m.s^-1. 
-%
-%      time    :  Scalar. Time elapsed since start of the simulation (s).
-%
-%      names   :  nbsv x 3 cell array. Column1=short name; column2=long
-%                 name; column3=units
-%
-%    Output variable:
-%
-%      db    :   nz x nx x nbsv array. ODE for tracer concentrations(mol N.m-3.s^-1).
-%
-%      Flx   :   Structure with 3 fields:
-%                V: nbsv+2 x nbsv+2 x nz x nx array. Flux(es) of tracer in the vertical dimension
-%                   that feed each spatial box (mol N.m-3.s^-1)at the current time step. Here, the 
-%                   source/sink groups are the same
-%                H: nbsv+2 x nbsv+2 x nz x nx array. Flux(es) of tracer in the horizontal dimension
-%                   that feed each spatial box (mol N.m-3.s^-1)at the current time step. Here, the 
-%                   source/sink groups are the same
-%                X: nbsv+2 x nbsv+2 x nz x nx array. Flux(es) of tracer due to advection that feed 
-%                   each spatial box (mol N.m-3.s^-1)at the current time step. Here, the 
-%                   source/sink groups are the same
+% Copyright (c) 2026 Virginie Bornarel
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
 
-%% Calculating each component of mixing and advection
 
+%% Initialize
 [nz, nx, nbsv] = size(bio);
 
+% Preallocate flux matrices
 [V, H, X, CS, R, P, VICC, DC, SBC, CU] = deal(zeros(nbsv+2, nbsv+2, nz, nx));
 
+% Pad ismixed to include 2 additional diagnostic groups (e.g., non-biological)
 ismixed = [ismixed; 0; 0];
 idx = find(ismixed);
 n = length(idx);
 
+%% Compute Fluxes
 for i=1:n
 
 j = idx(i);
@@ -105,10 +90,11 @@ Flx.DC = DC;
 Flx.SBC = SBC;
 Flx.CU = CU;
 
-%% Calculating derivative db
+%% Total flux (vertical + horizontal + advection)
 
 fluxtot = Flx.V + Flx.H + Flx.X; % nbsv+2 x nbsv+2 x nz x nx molN.m-3.s-1
 
+%% Derivative of tracer concentration (dC/dt)
 db = zeros(nz, nx, nbsv);
 
 for i = 1:n
@@ -118,6 +104,7 @@ for i = 1:n
     
 end
 
+%% NaN check
 if any(isnan(db(:)))
     warning('mixtracerBio_ode:nanInDbdt', 'NaN in dB/dt');
 end
@@ -125,8 +112,7 @@ end
 
 %% Function VERTICALMIXING
 function V = verticalmixing(tracer, Grd, mld, ent, In, time)
-% VERTICALMIXING calculates vertical mixing of a tracer in the
-% WCVIE2E_physicalmodel
+% VERTICALMIXING Calculates vertical mixing of a tracer
 %
 % V = verticalmixing(tracer, Grd, mld, ent, In, time)
 %
@@ -135,45 +121,37 @@ function V = verticalmixing(tracer, Grd, mld, ent, In, time)
 % Vertical mixing (tracer.s^-1) is estimated from the mixed layer depth, 
 % entrainment rates and other physical parameters.
 %
-%   Input variables:
+% Inputs:
 %
-%       tracer:  nz x nx array. Tracer concentrations in each spatial box 
-%                at the current time step (units vary based on tracer)
+%       tracer:  [nz x nx]. Tracer concentrations at the current time step
 %
-%       Grd   :  Structure holding spatial and temporal grid data for
-%                WCVIE2E_physicalmodel simulations
+%       Grd   :  Grid structure
 %
-%       mld   :  Structure holding mixed layer depth data (m) at current time steps
+%       mld   :  Structure with .t and .data (mixed layer depths, m)
 %
-%       ent   :  Structure holding entrainment rate data (s^-1) at current time steps
-%
-%       In    :  structure holding user-supplied input variables
+%       ent   :  Structure with .t and .data (entrainment rates; s-1)
 %
 %       time   :  Scalar. Time elapsed since start of the simulation (s).
 %
-%   Output variable:
+%   Output:
 %
-%       V   :  nz x nx array. Flux(es) of tracer in the vertical dimension
-%              that feed each spatial box (tracer.s^-1)at the current time
-%              step.
+%       V   :  [nz x nx]. Vertical flux of tracer (tracer/s) at current
+%              time step
 
-%Physical parameters
+% ----Physical constants ---------
 
-Mv=0.1./86400;   % vertical mixing (m.s^-1)- 0.2 in paper but 0.1 in model
-dm=4; %depth of mixing below hu (m)- 4 m in model and 2 in paper-
-Hshpp=43; %permanent pycnocline shelf (m)
-Hslpp=73; %permanent pycnocline slope (m)
+Mv=0.1./86400;   % vertical mixing velocity [m/s]
+dm=4;            % mixing depth below MLD [m]
+Hshpp=43;        % pycnocline shelf [m]
+Hslpp=73;        % pycnocline slope [m]
 
 
-% Creation of the matrix V
+% ---- Initialize ---------------
 
 V=zeros(Grd.nz, Grd.nx);
 
-% finding time index corrsponding to current time
-
 idx=mld.t==time & ent.t == time;
 
-% dzi and dzo
 
 dzi = Hshpp - mld.data(idx,1);
 if dzi <= dm
@@ -184,6 +162,8 @@ dzo = Hslpp - mld.data(idx,2);
 if dzo <= dm
     dzo = dm;
 end
+
+
 %shelf & upper layer (i.e. mixed layer)
 V(1,1)=(((Mv.*dm)./(mld.data(idx,1).*dzi))...
     +max(ent.data(idx,1)./(Hshpp+mld.data(idx,1)),0)).*(tracer(2,1)-tracer(1,1));
@@ -210,53 +190,50 @@ V(3,2)=(Mv./In.dz(3,2)).*(tracer(2,2)-tracer(3,2));
 
 %% Function HORIZONTALMIXING
 function H = horizontalmixing(tracer, Grd, mld, lb, In, time)
-% HORIZONTALMIXING calculates horizontal mixing of a tracer in the
-% WCVIE2E_physicalmodel
+% HORIZONTALMIXING Calculates horizontal mixing of a tracer
 %
-%H = horizontalmixing(tracer, Grd, mld, lateralforcing, In, time)
+% H = horizontalmixing(tracer, Grd, mld, lb, In, time)
 %
-%This function is derived from Ianson and Allen. 2002. A two-dimensional
-%nitrogen and carbon flux model in a coastal upwelling region. 
+% This function is derived from Ianson and Allen (2002). A two-dimensional
+% nitrogen and carbon flux model in a coastal upwelling region. 
 %
 %
-%   Input variables:
+% Inputs:
 %
-%       tracer:  nz x nx array. Tracer concentrations in each spatial box 
-%                at the current time step (units vary based on tracer)
+%       tracer:  [nz x nx]. Tracer concentration matrix
 %
-%       Grd   : Structure holding spatial and temporal grid data for
-%               WCVIE2E_physicalmodel simulations
+%       Grd   : Structure with grid data
 %
-%       mld   : Structure holding mixed layer depth data (m) at current time steps
+%       mld   : Structure with mixed layer depth (fields: .t, .data)
 %
 %       lb    : Nested structure holding lateral boundary concentrations of tracer 
-%               (units vary based on tracer)
+%              
 %               t:    Grd.time(it):In.datadt:Grd.time(it+1), time (seconds from sim start time)
-%               o:    1 x 6 array specifying the boundary
+%               o:    1 x 14 array specifying the boundary
 %               data: length(t) x length(o) array holding the data for the current time steps
 %               Data: Column 1 = open ocean upper layer; Column 2 = open ocean lower layer; 
 %               Column 3 = rain shelf; Column 4: rain slope; Column 5 = freshwater from run-offs; 
-%               Column 6 = VICC
+%               Column 6 = VICC ul sh; Column 7 = VICC ll sh; Column 8 = sbc shelf ul; 
+%               Column 9 = sbc shelf ll'; Column 10 = sbc slope ul; Column 11 = dc shelf ul; 
+%               Column 12 = dc shelf ll; Column 13 = dc slope ul; Column 14 = cu slope ll
 %
 %       In    : Structure holding user-supplied input variables
 %
 %       time  : Scalar. Time elapsed since start of the simulation (s).
 %
-%   Output variable:
+%   Output:
 %
-%       H   :  nz x nx array. Flux(es) of tracer in the horizontal dimension
-%              that feed each spatial box (tracer.s^-1) at the current time
-%              step
+%       H   :  [nz x nx]. Horizontal tracer fluxes (tracer/s)
 
-%Physical parameters
+% -----Physical constant --------
 
-Mh=20./86400;% horizontal mixing m.s-1
+Mh=20./86400;% horizontal mixing coefficient (m/s)
 
-% Creation of the matrix H
+% ----- Initialize --------
 
 H=zeros(Grd.nz, Grd.nx);
 
-% logical vector indicating current time 
+% ----- Get time index --------
 
 idx = mld.t==time & lb.t==time;
 
@@ -283,35 +260,30 @@ H(3,2)=(Mh./In.dx(3,2)).*(lb.data(idx,2)-tracer(3,2));
 
 %% Function ADVECTION
 function [X, CS, R, P, VICC, DC, SBC, CU] = advection(tracer, lb, In, Grd, mld, tauy, xfil, ~, buoy, time)
-% ADVECTION calculates advection of a tracer in the
-% WCVIE2E_physicalmodel
+% ADVECTION Calculates advection of a tracer
 %
-%   X = advection(tracer, lb, In, Grd, mld, tauy, Sig, prate, it, time)
+% X = advection(tracer, lb, In, Grd, mld, tauy, xfil, ~, buoy, time)
 %
-%   This function is derived from Ianson and Allen. 2002. A two-dimensional
-%   nitrogen and carbon flux model in a coastal upwelling region. 
+% Based on: Ianson and Allen. 2002. A two-dimensional nitrogen and carbon 
+% flux model in a coastal upwelling region. 
 %
-%   Input variables:
+% Inputs:
 %
-%      tracer:  nz x nx array. Tracer concentrations in each spatial box at the
-%               current time step (units vary based on tracer)
+%      tracer:  [nz x nx]. Tracer concentrations at current time step
 %
 %      lb    :  Nested structure holding lateral boundary concentrations of tracer 
-%               (units vary based on tracer)
-%               t:    Grd.time(it):In.datadt:Grd.time(it+1), time (seconds from sim start time)
-%               o:    1 x 13 array specifying the boundary
+%               t:    Grd.time(it):In.datadt:Grd.time(it+1), time
+%               o:    1 x 14 array specifying the boundary
 %               data: length(t) x length(o) array holding the data for the current time steps
 %               Data: Column 1 = open ocean upper layer; Column 2 = open ocean lower layer; 
 %               Column 3 = rain shelf; Column 4: rain slope; Column 5 = freshwater from run-offs; 
-%               Column 6 = VICC; Column 7 = sbc shelf ul; Column 8 = sbc shelf ll';
-%               Column 9 = sbc slope ul; Column 10 = dc shelf ul; Column 11
-%               = dc shelf ll; Column 12 = dc slope ul; Column 13 = cu
-%               clope ll
+%               Column 6 = VICC ul sh; Column 7 = VICC ll sh; Column 8 = sbc shelf ul; 
+%               Column 9 = sbc shelf ll'; Column 10 = sbc slope ul; Column 11 = dc shelf ul; 
+%               Column 12 = dc shelf ll; Column 13 = dc slope ul; Column 14 = cu slope ll
 %
 %      In    :  Structure holding user-supplied input variables
 %
-%      Grd   :  Structure holding spatial and temporal grid data for
-%               WCVIE2E_physicalmodel simulations
+%      Grd   :  Structure holding spatial and temporal grid data
 %
 %      mld   :  Structure holding mixed layer depth data (m). Data:
 %               datant+1 x nx array.
@@ -320,19 +292,15 @@ function [X, CS, R, P, VICC, DC, SBC, CU] = advection(tracer, lb, In, Grd, mld, 
 %               Data: datant+1 x nx array.
 %               datant+1 x 1 array if from tauy2
 %
-%      xfil  :  Structure holding the remote upwelling index (m.s-1) or the
-%               total upwelling forcing based on currents from Debby's file
+%      xfil  :  Structure holding the total upwelling forcing based on 
+%               currents from Debby's file
 %               datant+1 x 1 array
 %
-%      Sig   :  nz x nx array holding the density (kg.m^-3) values in each
-%               spatial box at the current time-step
-%
 %      buoy :  Nested structure holding buyoancy fluxes and alongshore
-%              currents. The sub-structures are PRATE/SBC/DC/UC. PRATE 
-%              expressed in m/s. SBC, DC and CU expressed in s-1
+%              currents. The sub-structures are PRATE/SBC/DC/UC. PRATE and 
+%              CU expressed in m/s. SBC and DC expressed in s-1
 %              t:    Grd.time(it):In.datadt:Grd.time(it+1), time (seconds from sim start time)
-%              o:    1 x 13 array specifying the boundary
-%              data: length(t) x length(o) array holding the data for the current time steps 
+%              data: [length(t) x 1 or 2] array holding the data for the current time steps 
 %
 %      time  :  Scalar. Time elapsed since start of the simulation (s).
 %
@@ -347,7 +315,8 @@ prate = buoy.PRATE;
 sbc = buoy.SBC;
 dc = buoy.DC;
 cu = buoy.CU;
-% logical vector indicating current time 
+
+%% Indexing
 
  idx = lb.t==time & mld.t==time & tauy.t==time & prate.t==time & sbc.t==time &...
  dc.t ==time & cu.t ==time & xfil.t==time;
@@ -391,6 +360,7 @@ cu = buoy.CU;
 
 %% if upwelling forcing calculated based on currents from Debby's files
 
+% Extract values
 force = xfil.data(idx);
 
 if force >0

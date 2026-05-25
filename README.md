@@ -178,7 +178,7 @@ A condensed version focusing on coupling strategies and ecosystem dynamics:
 - Kearney KA, Stock C, Aydin K, Sarmiento JL. Coupling planktonic ecosystem and fisheries food web models for a pelagic ecosystem: Description and validation for the subarctic Pacific. Ecological Modelling 2012;237–238:43–62. https://doi.org/10.1016/j.ecolmodel.2012.04.006.
 
   Key adaptations include:
-- Model refactoring for coastal upwelling systems
+- Model refactoring for coastal upwelling systems including revised ecosystem structure, modified process representations, new analysis and preprocessing scripts, updated forcing/data workflows, updated diagnostics and outputs
 - Testing of one-way forcing vs. two-way coupling on ecosystem structure and function
 
 ---

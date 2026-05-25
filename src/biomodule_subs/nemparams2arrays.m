@@ -1,41 +1,37 @@
 function B = nemparams2arrays(A)
-%NEMPARAMS2ARRAYS Stores NEMURO parameters in arrays
+%NEMPARAMS2ARRAYS Stores NEMURO parameters in structured arrays
 %
 % B = nemparams2arrays(A)
 %
 % This function rearranges the numerous parameters needed to run the NEMURO
-% model (or its variants) into critter x 1 (for group-related) or critter x
-% critter (for flux-related) critters.  This can make the parameters easier
-% to access as a group, as opposed to the FORTRAN-style named parameters
-% used in the original code.  In each array, the row and column dimensions
-% correspond to the following NEMURO state variables:
+% model (or its variants) into nbsv x 1 (for group-related) or nbsv x nbsv 
+% (for flux-related) arrays. This organization makes parameters easier to 
+% access and manipulate collectively, as opposed to the original FORTRAN-
+% style scalar variables.
 %
-% If only NEMURO model, same order as on the left, 
-% if full wce model, check the order in cell array 'names' (i.e. order as
+% Each array’s row and column indices correspond to the following NEMURO
+% state variables:
+%
+% 1 = PS   (small phytoplankton)
+% 2 = PL   (large phytoplankton)
+% 3 = ZS   (small zooplankton)
+% 4 = ZL   (large zooplankton)
+% 5 = ZP   (predatory zooplankton)
+% 6 = PON  (particulate organic nitrogen)
+% 7 = NO3  (nitrate)
+% 8 = NH4  (ammonium)
+% 9 = DON  (dissolved organic nitrogen)
+% 10 = SiOH4 (silicic acid)
+% 11 = Opal  (particulate silica)
+%
+% If full WCVI-E2E model, check the order in cell array 'names' (i.e. order as
 % in Ecopath, following by NEMURO variables that don't overlap with Ecopath
-% ordered as in nemnames of setstatevars.m). Can vary depending on the
-% Ecopath model used. Double check.
+% ordered as in nemnames of setstatevars.m).                                                          
 %
-% 1 = PS, small phytoplankton
-% 2 = PL, large phytoplankton                 
-% 3 = ZS, small zooplankton                   
-% 4 = ZL, large zooplankton                    
-% 5 = ZP, predatory zooplankton               
-% 6 = PON, particulate organic nitrogen
-% 7 = NO3, nitrate                             
-% 8 = NH4, ammonium                                                                      
-% 9 = DON, dissolved organic nitrogen         
-% 10 = SiOH4, silicic acid                    
-% 11 = Opal, particulate silica              
-%                                              
+% INPUT:
+%   A  -  1 x 1 structure containing NEMURO parameters (see nemuroParamSets.m)
 %
-% Input variables:
-%
-%   A:  1 x 1 structure whose fields correspond to NEMURO parameter names,
-%       and whose values are scalar parameter values.  See
-%       nemuroParamSets.m for some examples.   
-%
-% Output variables:
+% OUTPUT:
 %
 %   B:  1 x 1 structure with the following fields:
 %
@@ -145,13 +141,30 @@ function B = nemparams2arrays(A)
 %
 %       alphaNH4:       scalar, slope of the delimiter fNH3 at
 %                       NH3=0. fNH3 is used to calculate ammonification and
-%                       denitrification rates. l/mol        
+%                       denitrification rates. l/mol 
 %
-% Number of state variables
+% This file was derived from the original nemparams2arrays routine
+% developed by Kelly Kearney for the WCE/NEMURO framework and modified
+% for the WCVI-E2E coastal upwelling ecosystem model.
+%
+% Original framework:
+% Copyright (c) 2008–2015 Kelly Kearney
+%
+% Modifications by Virginie Bornarel (2017–2026) include:
+%   - revised NEMURO state-variable ordering for WCVI-E2E use
+%   - addition of oxygen, nitrification, and denitrification parameters
+%   - updated decomposition/remineralization parameter mappings
+%   - revised documentation and parameter descriptions
+%
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
 
+% Number of state variables
 nb = 11;
 
-% Parameters that are scalars
+%----------------------------------------------------
+% 1. Scalar parameters
+%----------------------------------------------------
 
 B.alpha1 = A.alpha1;
 B.alpha2 = A.alpha2;
@@ -166,13 +179,15 @@ B.alphaNH4=A.alphaNH4;
 B.Nit0=A.Nit0;
 B.Knit=A.KNit;
 
-% Parameters that are now nbsv x 1 arrays
-
+%----------------------------------------------------
+% 2. Group-level parameters (nb x 1)
+%----------------------------------------------------
 [B.alpha, B.Iopt, B.Vmax, B.Kno3, B.Knh4, B.Kgpp, B.pusai, B.res0, ...
     B.Kres, B.mor0, B.Kmor, B.gamma, B.lambda, B.Kgra, B.Ksi, ...
     B.alphaeg, B.beta, B.needsi, B.settle, B.egenosink] = ...
     deal(zeros(nb,1));
-    
+
+
 B.alpha(1) = A.alphaS;
 B.alpha(2) = A.alphaL;
 
@@ -238,8 +253,9 @@ B.beta(5) = A.BetaZP;
 B.settle(6) = A.setVPON;
 B.settle(11)   = A.setVOpal;
 
-% Parameters that are now nbsv x nbsv (source x sink) arrays
-% TODO: Check why I have GRmaxSps/pl for some param sets
+%----------------------------------------------------
+% 3. Flux-related parameters (nb x nb)
+%----------------------------------------------------
 
 [B.grmax, B.thresh, B.grpusai, B.vdec, B.Kdec] = deal(zeros(nb));
 
