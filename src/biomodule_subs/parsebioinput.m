@@ -86,6 +86,25 @@ function BioIn = parsebioinput(~,~,varargin)
 %
 % --- ECOPATH MODEL ---
 % EM : (struct) Ecopath model structure
+%
+% This file was derived from the original parsewcenemin routine
+% developed by Kelly Kearney for the WCE/NEMURO framework and
+% substantially reworked for the WCVI-E2E coastal upwelling ecosystem model.
+%
+% Original framework:
+% Copyright (c) 2014 Kelly Kearney
+%
+% Major modifications and extensions by Virginie Bornarel (2017–2026)
+% include:
+%   - revised parser structure for WCVI-E2E and NEMURO configurations
+%   - support for 2D biological initial conditions and extra zooplankton groups
+%   - updated diapause, functional response, and Ecopath parameter options
+%   - automatic loading of default biological datasets from the repository
+%   - removal of WCE-specific iron/scavenging options not used in WCVI-E2E
+%   - expanded documentation and input validation
+%
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
 
 
 % -------------------------

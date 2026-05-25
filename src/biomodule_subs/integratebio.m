@@ -1,49 +1,76 @@
 function [newbio, dbdt, Splitdbdt, Diag, badthings] = integratebio(fun, nemflag, G, oldbio, P, B, Arch, it, varargin)
-% INTEGRATEBIO Integrate biology in wce biological module
+% INTEGRATEBIO Integrate biology state variables in WCVIE2E model
 %
-% [newbio, dbdt, Splitdbdt, Diag, badthings] = integratebio(fun, G, oldbio, P, B, solver1, solver2, ...)
+% [newbio, dbdt, Splitdbdt, Diag, badthings] = integratebio(fun, nemflag, G, oldbio, P, B, Arch, it, solver1, solver2, ...)
 %
-% This function is a wrapper for different ODE solvers, used to integrate biological variables in 
-% the wce module.  It allows one to try multiple different solvers, which can sometimes be useful 
-% when values get low or start changing quickly (such that they are difficult to solve with
-% the set time step). 
+%   This function integrates the biological state variables in the WCVIE2E
+%   model using one or several ODE solvers in sequence. If a solver fails
+%   (negative, NaN, or Inf concentrations), the next solver is attempted.
 %
-% Input variables:
+% -------------------------------------------------------------------------
+% INPUTS:
 %
-%   fun:     function handle of ODEs for biology.  Must be of the form
-%            [db, Splitdb, Diag] = fun(t, b, ParamsG, ParamsP, ParamsB).
+%   fun      : Function handle for the ODEs of biological processes.
+%               Must have the signature:
+%               [db, Splitdb, Diag] = fun(nemflag, t, oldbio, G, P, B, Arch, it)
 %
-%   oldbio:  nz x nx x nbsv array of biological state variables
+%   nemflag  : Logical. TRUE if NEMURO-based mode is active.
 %
-%   G, P, B: structure of additional parameters for ODEs (parameters are for current time step when 
-%            applicable)
+%   G        : Structure with grid and time step parameters:
+%               - t  : current model time (s)
+%               - dt : time step (s)
 %
-%   solver: ODE solvers to use, in order.  If any tracers go negative, become NaNs, or become 
-%           infinite, the next solver will be tried, until the last solver is reached.  Can be 
-%           'euler', 'ode4', 'ode45', or 'implicit'.  *NOTE* Implicit doesn't really work,
-%           doesn't conserve mass
+%   oldbio   : [nz x nx x nbsv] array of current biological concentrations (mol N m^-3)
 %
+%   P, B, Arch : Structures with model parameters, biological properties, and archive info
 %
-% Output variables:
+%   it       : Current time step index
 %
-%   newbio: biological state variable values at time t+dt
+%   varargin : List of solver names to try sequentially, e.g.:
+%              {'euler', 'ode4', 'ode45', 'implicit'}
 %
-%   dbdt:   dB/dt for each state variable.
+% -------------------------------------------------------------------------
+% OUTPUTS:
 %
-%   Split:  structure with contribution toward dB/dt from each flux type in
-%           the ODE function.  For euler and ode4, these will add to dbdt;
-%           for ode45 they represent the splits when the ODE function is
-%           evaluated at time t (since getting weights throughout the
-%           variable steps is not presently possible)
+%   newbio    : [nz x nx x nbsv] biological concentrations after integration
 %
-%   Diag:   additional diagnostic variables returned by the ODE function.
-%           For euler and ode4, the diagnostics are those associated with
-%           the beginning of the time step.  Extra diagnostics cannot be
-%           returned from the ode45 solver at this time.
+%   dbdt      : [nz x nx x nbsv] instantaneous rates of change (mol N m^-3 s^-1)
 %
-%   bad:    nz x nx x nbsv logical array, true if the final solver attempted
-%           still failed to integrate without hitting a negative, NaN, or
-%           Inf value.
+%   Splitdbdt : Structure with dB/dt contributions by process type
+%
+%   Diag      : Diagnostics returned by ODE solver
+%
+%   badthings : Logical array [nz x nx x nbsv]. TRUE if integration failed
+%               (negative, NaN, or Inf values)
+%
+% -------------------------------------------------------------------------
+% Notes:
+%   - If forced biomasses are defined in B.fish, they are applied after each
+%     solver step using applyBiomassForcing().
+%   - The function automatically switches solvers when instability occurs.
+% -------------------------------------------------------------------------
+%
+% This file was initially derived from the integratebio routine
+% developed by Kelly Kearney for the WCE/NEMURO framework and
+% subsequently extended and restructured for the WCVI-E2E coastal
+% upwelling ecosystem model.
+%
+% Original framework:
+% Copyright (c) 2008–2015 Kelly Kearney
+%
+% Major redevelopment and extensions by Virginie Bornarel (2017–2026)
+% include:
+%   - adaptation from 1D to 2D biological state integration
+%   - integration of fishing mortality and biomass forcing
+%   - support for coupled WCVI-E2E/NEMURO configurations
+%   - revised solver interfaces and diagnostics
+%   - expanded flux and archive handling
+%   - updated stability and error-control procedures
+%
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
+
+% === Initialization ===
 
 t = G.t;
 dt = G.dt;

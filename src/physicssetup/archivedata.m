@@ -1,9 +1,7 @@
 function [avg, data, file] = archivedata(Grd, Arch, it, data, it0)
-%ARCHIVEDATA Write physicalmodel results to file
-%
-% New version should be compatible with all versions of Matlab, as long as
-% snctools is installed and mexnc points to the proper backend (either
-% newer internal stuff or the proper mex version).
+% ARCHIVEDATA Averages bio-physical variables and append to table
+% This output format allows to speed-up simulations when biological modules 
+% are added (i.e., full end-to-end model)
 %
 % Input variables:
 %
@@ -33,6 +31,28 @@ function [avg, data, file] = archivedata(Grd, Arch, it, data, it0)
 %               and columns hold data for each combination of data and 
 %               spatial box - Variables of interest and diagnostic variables 
 %               are included in the archived data
+%
+% This file was initially derived from the archivemldata utility
+% developed by Kelly Kearney for the WCE/NEMURO framework and
+% substantially redesigned for the WCVI-E2E coastal upwelling
+% ecosystem model.
+%
+% Original framework:
+% Copyright (c) 2010 Kelly Kearney
+%
+% Major redevelopment and extensions by Virginie Bornarel (2017–2026)
+% include:
+%   - transition from 1D NetCDF archiving to 2D table-based output
+%   - support for coupled physical-biological WCVI-E2E diagnostics
+%   - restructuring of archived variables by spatial box and process
+%   - repository-relative output and file-management handling
+%   - revised averaging and storage architecture for computational efficiency
+%   - integration with WCVI-E2E diagnostic and flux bookkeeping systems
+%
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
+%
+% ------------------------------------------------------------------------------
 
 
 %% House-keeping constants

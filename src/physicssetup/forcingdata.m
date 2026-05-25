@@ -121,6 +121,10 @@ function [Ht, Wnd, VMxng, LB, Buoy, varargout] = forcingdata(Grd, it, In, vararg
 %                           o:    1 x 14 array specifying the boundary
 %                           data: length(t) x length(o) array holding the data for the current time 
 %                                 steps
+%
+% Copyright (c) 2026 Virginie Bornarel
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
 
 % -------------------------
 % Time vectors

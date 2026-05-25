@@ -1,42 +1,36 @@
 function y = ode4splitsnonneg(odefun,tspan,y0,varargin)
-%ODE4SPLITSNONNEG Like ode4, but returns intermediate components, no negative
+%ODE4SPLITSNONNEG Runge-Kutta 4th order solver with split tracking and non-negativity enforcement.
 %
-% [y, dy, Splits, Diag, failflag] = ode4splitsnonneg(odefun,tspan,y0,G,P,B, ...)
+% y = ode4splitsnonneg(odefun, tspan, y0, G, P, B, Arch, it)
 %
-% This function extends the ode4 function to calculate diagnostic variables
-% and additive components as the ODE is solved.  For the additive
-% components aspect, I assume that the ODE function is of the form dy/dt =
-% dy1 + dy2 + dy3 + ....  This is particularly designed for biological
-% modules in mixed_layer, where the total change is a sum of processes
-% (production, grazing, predation loss, etc).
+% This function integrates an ODE system using the classical 4th-order Runge-Kutta method
+% while returning intermediate components and ensuring no negative concentrations. It is
+% particularly useful for biological models where total rates are composed of additive processes.
 %
-% Input variables:
+% INPUTS:
+% odefun   - Function handle to ODE system. Should return db = odefun(t, y, ...)
+% tspan    - Vector of time steps to integrate over (length must be >= 2)
+% y0       - Initial condition (3D array: nz x nx x nbsv)
+% varargin - Additional arguments passed to odefun
 %
-%   odefun:     function handle to ode, of form [db,Splitdb,Diag] =
-%               fun(t,b,G,P,B) 
+% OUTPUT:
+% y        - 4D array (nz x nx x nbsv x nt), state values at each time step
 %
-%   tspan:      vector of time steps to integrate over
+% This file was derived from the original ode4splitsnonneg routine
+% developed by Kelly Kearney for the WCE/NEMURO framework and modified
+% for use with WCVI-E2E biological state arrays.
 %
-%   y0:         3D array of initial conditions
+% Original framework:
+% Copyright (c) 2008–2015 Kelly Kearney
 %
-%   p#:         additional parameters to pass to the ODE function
+% Modifications by Virginie Bornarel (2017–2026) include:
+%   - adaptation to 3D biological state arrays
+%   - revised array indexing for WCVI-E2E model geometry
+%   - simplified solver output handling
+%   - updated documentation and usage notes
 %
-% Output variables:
-%
-%   y:          nz x nx x nbsv x 2 array. y0 and new values for next time step 
-%
-%   dy:         nz x nx x nbsv array. dy over time step in mol N.m-3.s-1
-%
-%   Splits:     structure containing all types of fluxes in molN.m-3.s-1. Each field is a type of flux 
-%               and holds a nbsv+2 x nbsv+2 x nz x nx array that corresponds to the average flux between 
-%               a source and a sink group in each box over the current time interval
-%
-%   Diag:       structure of diagnostic variables at each time step
-%
-%   failflag:   true if any component becomes negative within the
-%               Runge-Kutta calculations.
-
-
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
 
 if ~isnumeric(tspan)
   error('TSPAN should be a vector of integration steps.');

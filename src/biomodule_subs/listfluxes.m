@@ -1,16 +1,32 @@
 function list = listfluxes(type, ismixed, Idx, diapause, varargin)
-%LISTFLUXES Return indices of fluxes in nemurokak or wce model
+%LISTFLUXES Returns predator-prey and biogeochemical flux definitions
 %
-% list = listfluxes('nemurokak', Idx)
-% list = listfluxes('wce', Idx, links)
+%   list = listfluxes('nemuro', ismixed, Idx, diapause)
+%   list = listfluxes('WCVI-E2E', ismixed, Idx, diapause, links, fisheries)
 %
-% Input variables:
+%   DESCRIPTION:
+%   Constructs a list of ecological and biogeochemical fluxes for the
+%   WCVI-E2E end-to-end model. Depending on the 'type' specified, it
+%   returns fluxes for either the NEMURO-style ('nemuro') or
+%   WCVI-E2E ('WCVI-E2E') model configuration.
 %
-%   Idx:    1 x 1 structure with fields (ps, pl, zs, zl, etc) indicating
-%           the index of the biological state variables corresponding to
-%           each nemuro-derived variable (see wce and nemurokak setup)
+% INPUT VARIABLES:
 %
-%   links:  ng x ng array indicating type of predator/prey interaction
+% type    : String. Either:
+%               - 'nemuro' → NEMURO model formulation
+%               - 'WCVI-E2E' → WCVI-E2E coupled model formulation
+%
+% ismixed : Logical vector indicating which state variables are
+%                 subject to vertical or horizontal mixing.
+%
+% Idx     : Structure containing indices of NEMURO state variables (e.g.,
+%           Idx.ps, Idx.pl, Idx.zs, Idx.no3, etc.).
+%
+% diapause: Logical scalar. If true, includes vertical fluxes for
+%                 diapausing zooplankton (e.g., ZL1).
+%
+% links   : [Only for 'wce'] ng x ng predator-prey interaction matrix. 
+%           Each element indicates type of interaction:
 %           1 = zooplankton eat zooplankton
 %           2 = nekton eat zooplankton
 %           3 = nekton eat nekton
@@ -18,25 +34,63 @@ function list = listfluxes(type, ismixed, Idx, diapause, varargin)
 %           5 = Nekton eat phytoplankton
 %           6 = Zooplankton eat detritus
 %           7 = Nekton eat detritus
-%           Note: For mortality flux indices, this function assumes that
-%           all living critters are involved in at least one predator-prey
-%           interaction.  If not true, I'll need to update this.
 %
-% Output variables:
+% fisheries   : [Only for 'wce'] ng x ngear matrix.
+%               1 if the species is harvested by a gear, 0 otherwise.
 %
-%   list:   n x 3 cell array, where column 1 indicates the type of flux,
-%           column 2 source group index, and column 3 the sink group index
+% OUTPUT VARIABLE:
+%
+%   list        : n x 3 cell array, where each row describes one flux:
+%                   Column 1 → flux type (string)
+%                   Column 2 → source index
+%                   Column 3 → sink index
+%
+% NOTES:
+%   - Assumes all “living” groups are included in at least one predator–
+%     prey interaction. If not, mortality fluxes may need updating.
+%   - Physical flux placeholders (V, H, CS, etc.) are added for completeness.
+%
+% This file was initially derived from the original listfluxes
+% routine developed by Kelly Kearney for the WCE/NEMURO framework
+% and subsequently extended and restructured for the WCVI-E2E
+% coastal upwelling ecosystem model.
+%
+% Original framework:
+% Copyright (c) 2011 Kelly Kearney
+%
+% Major modifications and extensions by Virginie Bornarel (2017–2026)
+% include:
+%   - expanded trophic interaction categories
+%   - fisheries and physical transport flux bookkeeping
+%   - support for diapause and mixed-variable handling
+%   - separate predator inflow/outflow accounting
+%   - generalized flux-definition architecture for WCVI-E2E
+%   - revised documentation and ecosystem process organization
+%
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
 
-% Copyright 2011 Kelly Kearney
-
+% -------------------------------------------------------------------------
+% Parse optional inputs
+% -------------------------------------------------------------------------
 if ~isempty(varargin)
 links = varargin{1};
 fisheries = varargin{2};
 end
 
+% -------------------------------------------------------------------------
+% Define flux lists by model type
+% -------------------------------------------------------------------------
 switch type
-    
+
+    %======================================================================
+    % NEMURO MODEL ("nemuro")
+    %======================================================================
     case 'nemurokak'
+
+    % -------------------------
+    % Primary production
+    % ------------------------- 
         
         A.gpp = [...
             Idx.no3     Idx.ps
@@ -45,20 +99,26 @@ switch type
             Idx.nh4     Idx.pl
             Idx.sioh4   Idx.plsi];
 
+     % -------------------------
+     % Exudation and respiration
+     % -------------------------
+
         A.exx = [...
             Idx.ps      Idx.don
             Idx.pl      Idx.don
             Idx.plsi    Idx.sioh4];
-%             Idx.mys     Idx.fe];
 
         A.res = [...
             Idx.ps      Idx.no3     
             Idx.ps      Idx.nh4     
             Idx.pl      Idx.no3     
             Idx.pl      Idx.nh4     
-            Idx.plsi    Idx.sioh4];   
-%             Idx.mys     Idx.fe];
-        
+            Idx.plsi    Idx.sioh4];  
+
+     % -------------------------
+     % Grazing and mortality
+     % -------------------------
+           
         A.gra = [...
             Idx.ps      Idx.zs
             Idx.ps      Idx.zl
@@ -69,20 +129,7 @@ switch type
             Idx.zl      Idx.zp];
         
         A.pre_out = [];
-        
-        A.exc = [...
-            Idx.zs      Idx.nh4
-            Idx.zl      Idx.nh4
-            Idx.zp      Idx.nh4];
-%           Idx.mys     Idx.fe];
-        
-        A.ege = [...
-            Idx.zs      Idx.pon
-            Idx.zl      Idx.pon
-            Idx.zp      Idx.pon
-            Idx.plsi    Idx.opal];
-%             Idx.mys     Idx.fe];
-        
+
         A.mor = [...
             Idx.ps      Idx.pon
             Idx.pl      Idx.pon
@@ -90,7 +137,23 @@ switch type
             Idx.zl      Idx.pon
             Idx.zp      Idx.pon
             Idx.plsi    Idx.opal];
-%             Idx.mys     Idx.fe];
+
+     % -------------------------
+     % Excretion, egestion, remineralization
+     % -------------------------
+        
+        A.exc = [...
+            Idx.zs      Idx.nh4
+            Idx.zl      Idx.nh4
+            Idx.zp      Idx.nh4];
+        
+        A.ege = [...
+            Idx.zs      Idx.pon
+            Idx.zl      Idx.pon
+            Idx.zp      Idx.pon
+            Idx.plsi    Idx.opal];
+        
+
 
         A.fish = [];
 
@@ -104,14 +167,15 @@ switch type
         A.den = [...
             Idx.don     Idx.nh4
             Idx.pon     Idx.nh4
-           %Idx.no3     Idx.mys  %no3 and pon produce nh4 in 1 reaction
             Idx.pon     Idx.don
            Idx.opal    Idx.sioh4];
         
         A.nit = [...
             Idx.nh4     Idx.no3];
              
-        % terms related to physical fluxes
+     % -------------------------
+     % Physical processes
+     % ------------------------- 
         
         mixid = find(ismixed);
         
@@ -145,7 +209,9 @@ switch type
         A.CU = [...
             mixid     mixid];
         
-        %terms related to vertical migration/sinking
+     % -------------------------
+     % Vertical sinking or migration
+     % -------------------------
         if diapause
         A.vflx = [...
             Idx.pon  Idx.pon
@@ -155,9 +221,17 @@ switch type
         A.vflx = [...
             Idx.pon  Idx.pon
             Idx.opal Idx.opal];
-        end            
-        
+        end 
+
+
+    %======================================================================
+    % WCVI-E2E MODEL
+    %======================================================================    
     case 'wce'
+
+        % -------------------------
+        % Primary production
+        % -------------------------
         
         A.gpp = [...
             Idx.no3     Idx.ps
@@ -170,6 +244,10 @@ switch type
             Idx.mys     Idx.ps
             Idx.mys     Idx.pl];
 
+        % -------------------------
+        % Exudation and respiration
+        % -------------------------
+
         A.exx = [...
             Idx.ps      Idx.don
             Idx.pl      Idx.don
@@ -181,6 +259,10 @@ switch type
             Idx.pl      Idx.no3     
             Idx.pl      Idx.nh4     
             Idx.plsi    Idx.sioh4];   
+
+        % -------------------------
+        % Predator–prey relationships
+        % -------------------------
         
         [pry1, prd1] = find(links == 2 | links == 3 | links == 5 | links ==7); % nektonic
         [pry2, prd2] = find(links == 1 | links == 4 | links ==6); % planktonic
@@ -193,7 +275,10 @@ switch type
         
         A.pre_out = [...
             pry1        prd1];
-        
+
+        % -------------------------
+        % Excretion and egestion
+        % -------------------------
         
         unqprd = unique([prd1; prd2]);
         
@@ -211,6 +296,10 @@ switch type
         A.ege_out = [...
             unqprd      Idx.pon.*ones(size(unqprd)) % egestion from all predator groups towards PON
             Idx.plsi    Idx.opal];
+
+        % -------------------------
+        % Mortality and fisheries
+        % ------------------------- 
         
         alllive = unique([pry1; pry2; prd1; prd2]); 
         alllive = alllive(alllive~=Idx.pon & alllive ~= Idx.opal);% Assumes all live guys except det
@@ -222,7 +311,11 @@ switch type
         fishedsp = find(~all(fisheries == 0,2));
         
         A.fish = [...
-            fishedsp    Idx.fish.*ones(size(fishedsp))];   
+            fishedsp    Idx.fish.*ones(size(fishedsp))]; 
+
+        % -------------------------
+        % Remineralization and nutrient cycling
+        % -------------------------
         
         A.amm = [...
             Idx.don     Idx.nh4
@@ -240,7 +333,9 @@ switch type
         A.nit = [...
             Idx.nh4     Idx.no3];
                 
-        % terms related to physical fluxes
+        % -------------------------
+        % Physical processes
+        % -------------------------
         
         mixid = find(ismixed);
         
@@ -274,7 +369,9 @@ switch type
         A.CU = [...
             mixid     mixid];
         
-        %terms related to vertical migration/sinking
+        % -------------------------
+        % Vertical sinking or migration
+        % -------------------------
         if diapause
         A.vflx = [...
             Idx.pon  Idx.pon
@@ -293,7 +390,9 @@ switch type
         
 end
         
-% Reformat into list
+% -------------------------------------------------------------------------
+% Convert structure A into standardized list
+% -------------------------------------------------------------------------
 
 list = cell(0,3);
 

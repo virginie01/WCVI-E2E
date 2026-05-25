@@ -1,44 +1,64 @@
 function [gpp, exc, resp, dz, psmax, Lfc, no3lim, nh4lim, silim, I, kappa, kappaP] = primprod(bv, G, P, B, nz, nx, nb)
-%PRIMPROD Primary production fluxes for wce module
+%PRIMPROD Primary production submodule for wcvie2eode
+%
+% Computes light attenuation, nutrient limitation (NO3, NH4, SiOH4),
+% light limitation, and temperature-dependent gross primary production,
+% along with extracellular excretion and respiration fluxes.
+%
+% INPUTS:
+% bv - nz x nx x nb array: current concentrations of state variables
+% G - struct: geometric/grid info (G.dz, G.z)
+% P - struct: physical/forcing fields (e.g., temperature, PAR)
+% B - struct: biological parameters (e.g., Vmax, K values, indices)
+% nz, nx - scalars: number of vertical layers and horizontal locations
+% nb - scalar: number of state variables
+%
+% OUTPUTS:
+% gpp:    -nb x nb x nz x nx array: gross primary production fluxes (source, sink, z domain, x domain)
+%          at current time step
+% exc:    -nb x nb x nz x nx array: extracellular excretion fluxes (source, sink, z domain, x domain)
+%          at current time step
+% resp:   -nb x nb x nz x nx array: phytoplankton respiration fluxes (source, sink, z domain, x domain)
+%          at current time step
+% dz:     -nz x nx array: depth intervals at current time step
+% psmax:  -nz x nx x nb array: max production rate at current temperature
+% Lfc:    -nz x nx x nb array: light limitation factor at current time step
+% no3lim: -nz x nx x nb array: N03 limitation at current time step
+% nh4lim: -nz x nx x nb array: NH4 limitation at current time step
+% silim:  -nz x nx x nb array: SiOH4 limitation at current time step
+% I:      -nz x nx x nb array: light intensity at current time step
+% kappa:  -nz x nx array: total light attenuation coefficient
+% kappaP: -nz x nx array: light attenuation due to phytoplankton
+%
+% This file was derived from the original primprod routine developed
+% by Kelly Kearney for the WCE/NEMURO framework and substantially
+% modified for the WCVI-E2E coastal upwelling ecosystem model.
+%
+% Original framework:
+% Copyright (c) 2008–2015 Kelly Kearney
+%
+% Major modifications by Virginie Bornarel (2017–2026) include:
+%   - adaptation from 1D to 2D light and nutrient limitation calculations
+%   - revised grid and forcing interfaces using WCVI-E2E structures
+%   - updated light attenuation and phytoplankton self-shading calculations
+%   - revised gross primary production, excretion, and respiration bookkeeping
+%   - removal of iron-quota terms not used in the WCVI-E2E configuration
+%   - expanded documentation and output descriptions
+%
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
 
-% OUTPUTS
-% 
-% gpp:    nbsv x nbsv x nz x nx array. Gross primary production fluxes (source, sink, z domain, x domain)
-%         at current time step
-%
-% exc:    nbsv x nbsv x nz x nx. Extracellular excretion fluxes (source, sink, z domain, x domain)
-%         at current time step
-%
-% resp:   nbsv x nbsv x nz x nx. Phytoplankton respiration fluxes (source, sink, z domain, x domain)
-%         at current time step
-%
-% dz:     nz x nx array. Depth intervals at current time step
-%
-% psmax:  nz x nx x nbsv array. Maximum possible production rate at current temperature
-%
-% Lfc:    nz x nx x nbsv array. Light limitation factor at current time step
-%
-% no3lim: nz x nx x nbsv array. N03 Limitation at current time step
-%
-% nh4lim: nz x nx x nbsv array. NH4 Limitation at current time step
-%
-% silim:  nz x nx x nbsv array. SiOH4 Limitation at current time step
-%
-% I:      nz x nx x nbsv array. Light intensity at current time step which is location-dependent 
-%         (i.e. same values along the 3rd dim)
-%
-% kappa:  nz x nx array. 
-%
-% kappaP: nz x nx array.
-
-
+%----------------------
+% 1. Initial Setup
+%----------------------
 dz = G.dz;
 
-% Calculate light limitation factor
-
+% Shading phytoplankton biomass (for self-shading effect)
 shadingbio = sum(bv(:,:,[B.idx.ps B.idx.pl]), 3); %nz x nx array total phytoplankton concentration molN/m3
 
-%% Kelly's version of kappaP
+%----------------------
+% 2. Compute kappaP (biological shading)
+%----------------------
 
 nearsurf = [0.5 0.5];    % m, Extend near to surface (since right at surface divides by 0)
 zedge = [nearsurf; cumsum(dz)]; %(nz+1) x nx array zedge
@@ -47,28 +67,25 @@ kppedge = B.alpha2 .* pintedge./zedge; %(nz+1) x nx array m-1
 
 kappaP=zeros(nz,nx);
 for i=1:nx
-kappaP(:,i) = interp1(zedge(:,i), kppedge(:,i), G.z(:,i)); %nz x nx array
+    kappaP(:,i) = interp1(zedge(:,i), kppedge(:,i), G.z(:,i)); %nz x nx array
 end
 
-%% My version of kappaP
-
-%a = shadingbio.*dz;%nz x nx molN/m2 in each box
-
-%b = [a(1,:)./2; ...
-%    a(1,:)+(a(2,:)./2);
-%    a(1,:)+a(2,:)+(a(3,:)./2)];%nz x nx molN/m2 at the center of each box
-
-%c = b./G.z;%nz x nx molN/m3 cumul at the center of each box
-
-%kappaP = B.alpha2 .* c; %nz x nx array m-1
-
+%----------------------
+% 3. Total light attenuation (kappa)
+%----------------------
 kappa = B.alpha1 + kappaP; %nz x nx array m-1
 
+%----------------------
+% 4. Light Intensity
+%----------------------
 I = zeros(nz,nx);
 for i = 1:nx
-I(:,i) = P.par24(i) .* exp(-kappa(:,i) .* G.z(:,i)); % nz x nx array W.m-2
+    I(:,i) = P.par24(i) .* exp(-kappa(:,i) .* G.z(:,i)); % nz x nx array W.m-2
 end
 
+%----------------------
+% 5. Light Limitation Factor (Lfc)
+%----------------------
 if B.usesteele
     I = repmat(I,1,1,length(B.Iopt));               %nz * nx * nbsv I is location-dependent 
     Iopt = repmat(ones(nz,nx),1,1,length(B.Iopt));
@@ -83,11 +100,15 @@ else
     Lfc = 1 - exp(-alpha .* I./Vmax);               %nz x nx x nbsv
 end
 
-% Calculate gross primary production
-
+%----------------------
+% 6. Initialize Outputs
+%----------------------
 [no3lim, nh4lim, silim, fratio, psmax] = deal(zeros(nz, nx, nb));
 [gpp, exc, resp] = deal(zeros(nb+2, nb+2, nz, nx));
 
+%----------------------
+% 7. Loop over Phytoplankton Groups
+%----------------------
 for ib = [B.idx.ps B.idx.pl]
     
     % Macronutrient limitation
@@ -158,14 +179,6 @@ for ib = [B.idx.ps B.idx.pl]
         resp(B.idx.plsi, B.idx.sioh4,:,:) = respsi;
     end
     
-    % Excretion and respiration of iron proportional to N
-    % TODO: with quota model, should Fe be excreted and respired?
-    
-%     excfe = excn .* (A.RCN/A.RCFe);
-%     exc(nb+1,A.idx.fe,:) = permute(excfe, [2 3 1]) + exc(nb+1,A.idx.fe,:);
-%     
-%     respfe = respn .* (A.RCN/A.RCFe);
-%     resp(nb+1,A.idx.fe,:) = permute(respfe, [2 3 1]) + resp(nb+1,A.idx.fe,:);
     
 end
 

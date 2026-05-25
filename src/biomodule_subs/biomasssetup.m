@@ -1,61 +1,68 @@
 function [bv, ba1, ba2, basum1, basum2, bfrac, nb, nz, nx, varargout] =  biomasssetup(bio, G, B)
-% BIOMASSSETUP Biomass calculations for nemurokak/wce modules
+% BIOMASSSETUP Compute biomass fields and depth-integrated quantities
 %
-% [bv, ba, basum, bfrac, zlfrac, nb, nz, nx] =  biomasssetup(bio, G, B)
+% This function prepares volumetric and domain-integrated
+% biomass quantities required by the WCVI-E2E biological ODEs.
 %
-% The diapause and preyvis options require different processes to "see"
-% different fractions of the various functional group biomasses.
+% DIAPAUSE:
+%   If B.diapause == true, ZL1 and ZL2 are combined into ZL for interaction
+%   calculations, and zlfrac is returned as an optional output.
 %
-% Input variables:
+% INPUTS:
+%   bio     - nz x nx x nb array of state-variable biomass (mol N m^-3)
+%   G       - Grid structure (dz, dx, area, etc.)
+%   B       - Biology parameter structure (idx, diapause, dzmod_fn, etc.)
 %
-%   bio:    nz x nx x nbsv array of biomass, values received from ode solver
+% OUTPUTS:
+%   bv      - structure of volumetric biomass fields:
+%               .orig     original biomass
+%               .zlcombo  ZL-combined biomass if diapause
+%               .pred     predator biomass matrix
+%               .prey     prey biomass matrix
+%   basum1  - domain-integrated biomass (variant 1)
+%   basum2  - domain-integrated biomass (variant 2) 
+%   bfrac   - fractional biomass distribution over domain
+%   nb      - number of state variables
+%   nz      - number of vertical layers
+%   nx      - number of horizontal boxes
 %
-%   G/B:    structure containing various grid and biological parameters
+% OPTIONAL OUTPUT (only if B.diapause == true):
+%   zlfrac  - nz x nx x 2 fraction of ZL1/ZL2 contributing to ZL
 %
-% Output variables:
+% This file was derived from the original biomasssetup routine
+% developed by Kelly Kearney for the WCE/NEMURO framework and
+% subsequently extended for the WCVI-E2E coastal upwelling model.
 %
-%   bv:     volumetric, per-box biomass concentration
-%           orig:       nz x nx x nb, same as input
-%           zlcombo:    nz x nx x nb, sum of ZL1/ZL2 moved to ZL (diapause only)
-%           prey:       nb x nb x nz x nx. prey by pred by depth by longitude, 
-%                       prey profile for each predator/prey link
-%           pred:       nb x nb x nz x nx. prey by pred by depth by longitude, 
-%                       predator profile for each predator/prey link 
+% Original code:
+% Copyright (c) 2014 Kelly Kearney
 %
-%   ba:     depth-integrated, per-box biomass, same fields as bv
+% Modifications and extensions by Virginie Bornarel (2017–2026) include:
+%   - adaptation from 1D to 2D spatial structure
+%   - revised biomass integration over heterogeneous box geometry
+%   - slope-adjusted depth integration
+%   - expanded predator/prey biomass bookkeeping
+%   - updated diapause handling and diagnostics
+%   - WCVI-specific domain scaling and area weighting
 %
-%   basum:  spatially-integrated biomass, same fields as bv
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
 %
-%   zlfrac: nz x nx x 2 array. Fraction of ZL1 and ZL2 in the ZL total
-%
-%   nb:     number of biological state variables
-%
-%   nz:     number of vertical layers
-%
-%   nz:     number of horizontal layers
+%------------------------------
+% Basic setup
+%------------------------------
 
-% Copyright 2014 Kelly Kearney
+bv.orig = bio; % nz x nx x nb, as passed by ODE solver
 
-%---------------------
-% Volumetric biomass
-% (per layer, mol/m^3)
-%---------------------
-
-% Biomass as passed by physical model.  In the diapause case, ZL is 0 and ZL1
-% and ZL2 hold the non-diapausing and diapausing copepod populations,
-% respectively.
-
-bv.orig = bio; 
-
-% The only alteration here is to move the split ZL1/ZL2 populations into ZL
-% if diapause is on, and zero out those subgroups.
+%------------------------------
+% ZL1/ZL2 Diapause Handling
+%------------------------------
 
 bv.zlcombo = bv.orig;
 if B.diapause
     bzl = bv.orig(:,:,[B.idx.zl1 B.idx.zl2]);
     
     if sum(bzl,3) == 0
-    warning('biomasssetup: sum of ZL1 and Zl2 equals to 0')
+        warning('biomasssetup: sum of ZL1 and Zl2 equals to 0')
     end
     
     bv.zlcombo(:,:,B.idx.zl) = sum(bzl,3);
@@ -65,38 +72,39 @@ if B.diapause
     varargout{1} = zlfrac;
 end
 
-% 1st version (Kelly's):
-% The predator/prey population varies by diet link, since some predators
-% see prey differently.  ZL1/ZL2 is seen as a combined group, and predator
-% ability to access prey is set per depth layer.
-% 2nd version (mine): don't take preyvis into account.
+%------------------------------------------
+% Predator-prey volumetric biomass matrices
+%------------------------------------------
 
 [nz, nx, nb] = size(bv.orig);
 
 [bv.pred, bv.prey] = deal(zeros(nb,nb,nz,nx));
 for iz = 1:nz
     for ix = 1:nx
-    btmp = reshape(bv.zlcombo(iz, ix, :),[],1,1);
+        btmp = reshape(bv.zlcombo(iz, ix, :),[],1,1);
     
-    bv.prey(:,:,iz,ix) = btmp * ones(1,nb);
-    bv.pred(:,:,iz,ix) = ones(nb,1) * btmp';
+        bv.prey(:,:,iz,ix) = btmp * ones(1,nb);
+        bv.pred(:,:,iz,ix) = ones(nb,1) * btmp';
     end
 end
 
-%---------------------
-% Integrated biomass
-% (per layer, mol/m^2)
-%---------------------
+%----------------------------
+% Depth-Integrated biomass
+%----------------------------
+
+% Integration using generic helper with slope adjustments
 
 [ba1.orig,   ba2.orig,       basum1.orig,    basum2.orig,    bfrac.orig]    = intoverdepth(bv.orig, G, nz, nx, nb, 1);
 [ba1.zlcombo,ba2.zlcombo,    basum1.zlcombo, basum2.zlcombo, bfrac.zlcombo] = intoverdepth(bv.zlcombo, G, nz, nx, nb, 1);
 [ba1.pred,   ba2.pred,       basum1.pred,    basum2.pred,    bfrac.pred]    = intoverdepth(bv.pred, G, nz, nx, nb, 2);
 [ba1.prey,   ba2.prey,       basum1.prey,    basum2.prey,    bfrac.prey]    = intoverdepth(bv.prey, G, nz, nx, nb, 3);
 
-%---------------------
-% Subfunction: 
-% integrate over depth
-%---------------------   
+
+
+%=========================================================================
+% Helper function: integrates biomass over depth with slope adjustments
+% mode = 'group' (nbsv), 'pred' (nb x nb), or 'prey' (nb x nb)
+%=========================================================================   
 
 function [ba1, ba2, basum1, basum2, bfrac] = intoverdepth(bv, G, nz, nx, nb, flag)
                      

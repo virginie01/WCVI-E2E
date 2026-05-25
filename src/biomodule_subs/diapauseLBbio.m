@@ -1,30 +1,26 @@
 function LBbio = diapauseLBbio(LBbio, B, names, A)
-% LBbiodiapause enables to calculate the concentration of ZL1 and ZL2 at the lateral boundaries when
-% diapause is on. ZL1 and ZL2 are determined based on the total concentration of ZL in a given 
-% source and the proportion of ZL1 and ZL2 in the destination box
-
-% INPUTS
+% DIAPAUSELBBIO Redistributes ZL boundary inputs into ZL1 and ZL2 based on internal proportions
 %
-% it:      current time step
-% 
-% Grd:     Structure holding spatial and temporal grid data for WCVIE2E_physicalmodel simulations
+% This function updates lateral boundary conditions for ZL1 and ZL2 zooplankton
+% groups during diapause, redistributing the existing ZL boundary concentrations
+% based on the relative abundances of ZL1 and ZL2 in the destination box.
 %
-% LBbio:   Nested structure. First level = "zooplanktonic" group (i.e. mixed). Second level:
-%          
-%          t:    Grd.time(it):In.datadt:Grd.time(it+1), time (seconds from sim start time)
-%          o:    1 x 6 array specifying the boundary
-%          data: length(t) x length(o) array holding the data for the current time steps
+% INPUTS:
+%   LBbio   - Struct. Each field is a zooplankton group (e.g., 'ZL', 'ZL1', 'ZL2') 
+%             with fields:
+%               .t    : time steps (same across groups)
+%               .o    : 1 x nsrc array of source indices
+%               .data : nt x nsrc matrix of ZL concentrations at boundaries
+%   B       - 3D array (nz x nx x nbsv): current concentrations of biological state variables
+%   names   - nbsv x 2 cell array: biological variable index to name
+%   A       - Struct with indices of variables, e.g., A.idx.zl, A.idx.zl1, A.idx.zl2
 %
-% B:       nz x nx x nbsv array. current concentrations of biological variables.
+% OUTPUT:
+%   LBbio   - Updated LBbio with ZL1 and ZL2 values set and ZL values set to 0
 %
-% A:       structure containing biological parameters.
-%
-%
-% OUTPUTS
-%
-% LBbiodiapause: new updated LBbio with appropriate calculated values for
-%                groups ZL, ZL1 and ZL2 from time Grd.time(it) to Grd.time(it+1)
-
+% Copyright (c) 2026 Virginie Bornarel
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
 
 ZL = names{A.idx.zl,2};
 ZL1 = names{A.idx.zl1,2};

@@ -1,12 +1,49 @@
 function [diagnames, A] = setdiagnosticsvars(BioIn, names, ismixed, A)
+% SETDIAGNOSTICSVARS Define diagnostic variables for the WCVI-E2E model
+%
+% INPUTS:
+%
+%   BioIn   : Structure containing biological input settings and flags
+%   names   : Cell array (nbsv x 3) of state variable names (short name, long name, units)
+%   ismixed : Logical flag indicating whether the mixed-layer version is used
+%   A       : Structure with indices and metadata for state variables (modified in place)
+%
+% OUTPUTS:
+%
+% diagnames: Cell array (n x 3) describing all diagnostic variables:
+%                 - db/dt for each state variable
+%                 - Fluxes between groups
+%                 - Predefined diagnostic outputs (e.g. nutrient limitation)
+%               Column 1 = short name
+%               Column 2 = long description
+%               Column 3 = units
+%
+% A        : Updated structure, now containing:
+%              - A.flux : List of all fluxes between groups
+%              - A.reroute : User-defined rerouted fluxes (if any)
+%              - A.ecosimppflag : Flag for which primary production formulation is used
+%
+% This file was derived from the original setdiagnosticsvars routine
+% developed by Kelly Kearney for the WCE/NEMURO framework and modified
+% for the WCVI-E2E coastal upwelling ecosystem model.
+%
+% Original framework:
+% Copyright (c) 2014 Kelly Kearney
+%
+% Modifications and extensions by Virginie Bornarel (2017–2026) include:
+%   - revised diagnostic handling for mixed-layer and WCVI-E2E configurations
+%   - support for diapause and fisheries-related flux bookkeeping
+%   - updated flux-list interfaces and rerouting logic
+%   - removal of unused iron-related diagnostics
+%   - expanded documentation and diagnostic metadata organization
+%
+% Distributed under the MIT License.
+% See LICENSE file in the repository root for details.
 
-% OUTPUTS
-%
-% diagnames: n x 3 cell array describing diagnostic variables from NEMURO, 
-%            db/dt for each group, and fluxes in wce model.Column 1 = short 
-%            name; column 2 = long name; column 3 = units. 
-%
-% Diagnostic variables from nemuro
+
+% --------------------------
+% Predefined diagnostic variables (mostly NEMURO)
+% --------------------------
 
 diagnames = {...
     'PSpsmax',      'Temp-mediated photsynthesis (small)'    '/s'
@@ -30,7 +67,9 @@ tf = ~ismember(diagnames(:,1), {'PStemplim','PLtemplim'});
 
 diagnames = diagnames(tf,:);
 
-% db/dt for each group
+% --------------------------
+% Derivatives: dB/dt for each group
+% --------------------------
 
 dbnames = names;
 for idb = 1:size(dbnames,1)
@@ -39,8 +78,9 @@ for idb = 1:size(dbnames,1)
     dbnames{idb,3} = 'molN m^-3 s^-1';
 end
 
-% Fluxes between groups, by process type, defaults
-
+% --------------------------
+% Fluxes between groups
+% --------------------------
 if BioIn.isnem
     
     % Nemuro defaults
@@ -67,7 +107,9 @@ else
 
 end
 
-% Add user-rerouted fluxes
+% --------------------------
+% Add user-defined rerouted fluxes
+% --------------------------
 
 if isempty(BioIn.reroute)
     A.reroute = cell(0,5);
@@ -92,8 +134,9 @@ end
 
 A.flux = fluxlist; % (was nemflux/wceflux in original)
 
-% Combine all diagnostics variables
-% TODO: make consistent between nemurokak and wce?
+% --------------------------
+% Final diagnostic variable list
+% --------------------------
 
 diagnames = [dbnames; fluxnames; diagnames];
 
