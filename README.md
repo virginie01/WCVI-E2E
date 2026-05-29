@@ -1,4 +1,5 @@
 # WCVI-E2E: End-to-End Ecosystem Model for the WCVI Coastal Upwelling System
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20372668.svg)](https://doi.org/10.5281/zenodo.20372668)
 
 ## Overview
 This repository contains the WCVI-E2E model, a fully coupled end-to-end (E2E) ecosystem model developed for the West Coast of Vancouver Island (WCVI), Canada.
